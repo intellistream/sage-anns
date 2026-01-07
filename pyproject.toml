@@ -61,6 +61,9 @@ cmake.build-type = "Release"
 cmake.verbose = true
 logging.level = "INFO"
 
+# 源码位置
+wheel.packages = ["python/sage_anns"]
+
 # CMake 参数
 cmake.args = [
     "-DENABLE_PYBIND=ON",

@@ -4,7 +4,7 @@
 
 **职责划分**:
 
-- 本目录 (`algorithms_impl/`)：C++ 源码、编译脚本、第三方库源码（git submodules）
+- 本目录 (`implementations/`)：C++ 源码、编译脚本、第三方库源码
 - `benchmark_anns/bench/algorithms/`：Python wrapper 代码，调用编译好的 `.so` 文件
 
 **特点**:
@@ -30,13 +30,10 @@ brew install cmake gflags boost libomp
 # 2. 安装 Python 依赖
 pip install torch numpy pybind11
 
-# 3. 初始化 Git Submodules（首次）
-git submodule update --init --recursive
-
-# 4. 构建所有算法
+# 3. 构建所有算法
 ./build_all.sh
 
-# 5. 安装 Python 包
+# 4. 安装 Python 包
 ./install_packages.sh
 ```
 
@@ -105,18 +102,18 @@ cp PyCANDYAlgo*.so $(python3 -c "import site; print(site.USER_SITE)")/
 ## 目录结构
 
 ```
-algorithms_impl/                   # C++ 源码和编译配置
+implementations/                   # C++ 源码和编译配置
 ├── bindings/PyCANDY.cpp          # pybind11 绑定实现
 ├── candy/                         # CANDY 算法 C++ 源码
-├── faiss/                         # Faiss 源码 (submodule)
-├── DiskANN/                       # DiskANN 源码 (submodule)
-├── puck/                          # Puck 源码 (submodule)
-├── SPTAG/                         # SPTAG 源码 (submodule)
-├── gti/                           # GTI 源码 (submodule)
-├── ipdiskann/                     # IP-DiskANN 源码 (submodule)
-├── plsh/                          # PLSH 源码 (submodule)
-├── vsag/                          # VSAG 源码 (submodule)
-├── pybind11/                      # pybind11 库 (submodule)
+├── faiss/                         # Faiss 源码
+├── diskann-ms/                    # DiskANN 源码
+├── puck/                          # Puck 源码
+├── SPTAG/                         # SPTAG 源码
+├── gti/                           # GTI 源码
+├── ipdiskann/                     # IP-DiskANN 源码
+├── plsh/                          # PLSH 源码
+├── vsag/                          # VSAG 源码
+├── pybind11/                      # pybind11 库
 ├── build.sh                       # PyCANDY 构建脚本
 ├── build_all.sh                   # 一键构建所有算法脚本
 ├── install_packages.sh            # 安装 Python 包脚本
@@ -129,7 +126,7 @@ algorithms_impl/                   # C++ 源码和编译配置
 
 ## 第三方库管理
 
-本目录使用 **git submodule** 管理第三方库：
+本目录包含以下第三方库源码：
 
 | 库             | 说明                | 构建方式               | Python 包     |
 | -------------- | ------------------- | ---------------------- | ------------- |
@@ -145,21 +142,8 @@ algorithms_impl/                   # C++ 源码和编译配置
 **构建分类**：
 
 1. **通过 PyCANDY 构建**: Faiss, DiskANN, SPTAG, Puck → 生成 `PyCANDYAlgo.so`
-1. **独立 CMake 构建**: GTI, IP-DiskANN, PLSH → 生成 C++ 库
-1. **独立 Makefile + wheel**: VSAG → 生成 `pyvsag-*.whl`
-
-**Submodule 操作**:
-
-```bash
-# 查看状态
-git submodule status
-
-# 更新到最新版本
-git submodule update --remote --recursive
-
-# 切换特定版本
-cd <submodule_path> && git checkout <branch_or_tag>
-```
+2. **独立 CMake 构建**: GTI, IP-DiskANN, PLSH → 生成 C++ 库
+3. **独立 Makefile + wheel**: VSAG → 生成 `pyvsag-*.whl`
 
 ## 手动构建（可选）
 
@@ -270,10 +254,4 @@ export CMAKE_PREFIX_PATH=$(python3 -c 'import torch;print(torch.utils.cmake_pref
 
 ```bash
 make -j2  # 减少并行数，而非 make -j$(nproc)
-```
-
-**Submodule 目录为空**
-
-```bash
-git submodule update --init --recursive
 ```

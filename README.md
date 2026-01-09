@@ -24,6 +24,8 @@
 |-----------|------|-------|----------|
 | **FAISS** | Graph/IVF | In-memory | GPU support, multiple index types |
 | **VSAG HNSW** | Graph | In-memory | Fast search, high recall |
+| **GTI** | Graph+Tree | In-memory | Dynamic insertion/deletion, logarithmic complexity |
+| **PLSH** | Hash | In-memory | Parallel LSH, optimized for sparse vectors |
 | **DiskANN** | Graph | Disk-based | Large-scale datasets, memory efficient |
 | **CANDY** | Hybrid | In-memory/Disk | Optimized for diverse workloads |
 | **PUCK** | Graph | In-memory | Chinese-origin, high performance |
@@ -137,6 +139,47 @@ index = ANNSIndex(
 )
 index.build(data)
 index.search(query, k=10)
+```
+
+### GTI (Graph-based Tree Index)
+
+```python
+from sage_anns import ANNSIndex
+
+index = ANNSIndex(
+    algorithm="gti",
+    dimension=128,
+    metric="l2",
+    m=16,  # Max graph connections per node
+    L=100  # Search depth parameter
+)
+index.build(data)
+
+# GTI supports efficient dynamic insertions and deletions
+new_vectors = np.random.randn(100, 128).astype('float32')
+index.add(new_vectors)
+
+# Search after insertions
+index.search(query, k=10)
+```
+
+### PLSH (Parallel Locality-Sensitive Hashing)
+
+```python
+from sage_anns import ANNSIndex
+
+index = ANNSIndex(
+    algorithm="plsh",
+    dimension=128,
+    metric="l2",
+    k=10,  # Hash functions per table
+    m=10,  # Number of hash tables
+    num_threads=4
+)
+index.build(data)
+index.search(query, k=10)
+
+# PLSH is optimized for sparse vectors and high-dimensional data
 ```
 
 ## API Reference

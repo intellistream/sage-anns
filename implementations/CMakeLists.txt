@@ -17,10 +17,75 @@ set(SPTAG_DIR ${ALGORITHMS_IMPL_DIR}/SPTAG)
 set(PYBIND11_DIR ${ALGORITHMS_IMPL_DIR}/pybind11)
 set(CANDY_DIR ${ALGORITHMS_IMPL_DIR}/candy)
 
-# 查找依赖
-find_package(Python3 REQUIRED COMPONENTS Development)
+# ========================================
+# 禁用CUDA支持 (CPU-only build)
+# ========================================
+set(CMAKE_DISABLE_FIND_PACKAGE_CUDA TRUE)
+set(CMAKE_DISABLE_FIND_PACKAGE_CUDAToolkit TRUE)
+set(USE_CUDA OFF CACHE BOOL "Disable CUDA" FORCE)
+set(USE_CUDNN OFF CACHE BOOL "Disable cuDNN" FORCE)
+set(CAFFE2_USE_CUDNN OFF CACHE BOOL "Disable cuDNN" FORCE)
+set(USE_NCCL OFF CACHE BOOL "Disable NCCL" FORCE)
+set(BUILD_CUDA_MODULE OFF CACHE BOOL "Disable CUDA modules" FORCE)
+set(TORCH_CUDA_ARCH_LIST "" CACHE STRING "Empty CUDA arch list" FORCE)
+
+
+if(NOT Python_FOUND)
+    find_package(Python REQUIRED COMPONENTS Interpreter Development.Module)
+endif()
+
+# 强制使用CPU版本的PyTorch（优先使用~/.local中的版本）
+execute_process(
+    COMMAND ${Python_EXECUTABLE} -c "import torch; import os; print(os.path.join(os.path.dirname(torch.__file__), 'share/cmake'))"
+    OUTPUT_VARIABLE TORCH_CMAKE_PATH
+    OUTPUT_STRIP_TRAILING_WHITESPACE
+    RESULT_VARIABLE TORCH_CMAKE_RESULT
+)
+
+if(TORCH_CMAKE_RESULT EQUAL 0)
+    message(STATUS "Using PyTorch CMake from: ${TORCH_CMAKE_PATH}")
+    set(CMAKE_PREFIX_PATH "${TORCH_CMAKE_PATH};${CMAKE_PREFIX_PATH}")
+else()
+    message(WARNING "Could not detect PyTorch CMake path from Python")
+endif()
+
+# 在查找 Torch 之前，设置 Caffe2 不使用 CUDA
+set(USE_CUDA OFF CACHE BOOL "Disable CUDA for Caffe2" FORCE)
+set(Caffe2_USE_CUDA OFF CACHE BOOL "Disable CUDA for Caffe2" FORCE)
+
+# 修改 Caffe2Config.cmake 中的 CUDA 检查，使其不失败
+set(CMAKE_POLICY_DEFAULT_CMP0074 NEW)
+
+# 尝试静默处理 CUDA 警告/错误
+set(CAFFE2_CMAKE_BUILDING_WITH_MAIN_REPO OFF)
 find_package(Torch REQUIRED)
-find_package(gflags REQUIRED)
+
+# 如果 Torch 被配置为使用 CUDA 但我们找不到 CUDA，覆盖该设置
+if(TORCH_CUDA_VERSION AND NOT CUDA_FOUND)
+    message(WARNING "PyTorch was built with CUDA support, but CUDA is not available. Building CPU-only version.")
+    set(USE_CUDA OFF)
+endif()
+
+# 添加系统库搜索路径
+list(APPEND CMAKE_PREFIX_PATH 
+    "/usr/lib/x86_64-linux-gnu/cmake"
+    "/usr/lib/cmake"
+    "/usr/local/lib/cmake"
+)
+
+# 查找 Boost (DiskANN 需要)
+find_package(Boost 1.70 COMPONENTS program_options)
+if(NOT Boost_FOUND)
+    message(WARNING "Boost not found, trying alternative paths...")
+    set(CMAKE_PREFIX_PATH "/usr/lib/x86_64-linux-gnu/cmake;${CMAKE_PREFIX_PATH}")
+    find_package(Boost 1.70 COMPONENTS program_options)
+endif()
+
+# 查找 gflags (可选)
+find_package(gflags QUIET)
+if(NOT gflags_FOUND)
+    message(WARNING "gflags not found, some features may be disabled")
+endif()
 
 # 配置选项 - 禁用 PAPI 和 Ray (CPU only build)
 set(CANDY_PAPI 0)
@@ -66,7 +131,7 @@ include_directories(
     ${PUCK_DIR}
     ${SPTAG_DIR}/AnnService
     ${TORCH_INCLUDE_DIRS}
-    ${Python3_INCLUDE_DIRS}
+    ${Python_INCLUDE_DIRS}
 )
 
 # 添加预处理器定义，将 CANDY 映射到 candy 目录
@@ -130,7 +195,7 @@ find_library(TORCH_PYTHON_LIBRARY torch_python PATHS "${TORCH_INSTALL_PREFIX}/li
 if(NOT TORCH_PYTHON_LIBRARY)
     message(WARNING "torch_python library not found at ${TORCH_INSTALL_PREFIX}/lib, trying Python site-packages")
     execute_process(
-        COMMAND ${Python3_EXECUTABLE} -c "import torch; import os; print(os.path.join(os.path.dirname(torch.__file__), 'lib'))"
+        COMMAND ${Python_EXECUTABLE} -c "import torch; import os; print(os.path.join(os.path.dirname(torch.__file__), 'lib'))"
         OUTPUT_VARIABLE TORCH_LIB_DIR
         OUTPUT_STRIP_TRAILING_WHITESPACE
     )
@@ -314,7 +379,7 @@ endif()
 
 # 获取 PyTorch 库路径
 execute_process(
-    COMMAND ${Python3_EXECUTABLE} -c "import torch; import os; print(os.path.join(os.path.dirname(torch.__file__), 'lib'))"
+    COMMAND ${Python_EXECUTABLE} -c "import torch; import os; print(os.path.join(os.path.dirname(torch.__file__), 'lib'))"
     OUTPUT_VARIABLE TORCH_LIB_DIR
     OUTPUT_STRIP_TRAILING_WHITESPACE
     ERROR_QUIET
@@ -358,10 +423,19 @@ target_link_options(PyCANDYAlgo PRIVATE
     -Wl,--export-dynamic
 )
 
-# 安装规则 - 简化版本，只安装到当前目录
-install(TARGETS PyCANDYAlgo
-    LIBRARY DESTINATION ${ALGORITHMS_IMPL_DIR}
-    COMPONENT python
-)
-
-message(STATUS "PyCANDYAlgo will be built in: ${ALGORITHMS_IMPL_DIR}")
+# 安装规则 - 安装.so文件到Python包目录
+if(DEFINED SKBUILD_PLATLIB_DIR)
+    # scikit-build-core构建时，安装到Python包目录
+    install(TARGETS PyCANDYAlgo
+        LIBRARY DESTINATION ${SKBUILD_PLATLIB_DIR}/sage_anns
+        COMPONENT python
+    )
+    message(STATUS "PyCANDYAlgo will be installed to: ${SKBUILD_PLATLIB_DIR}/sage_anns")
+else()
+    # 本地开发构建时，输出到implementations目录
+    install(TARGETS PyCANDYAlgo
+        LIBRARY DESTINATION ${ALGORITHMS_IMPL_DIR}
+        COMPONENT python
+    )
+    message(STATUS "PyCANDYAlgo will be built in: ${ALGORITHMS_IMPL_DIR}")
+endif()

@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.10...3.27)
 project(
     sage-anns
     VERSION 0.1.0
-    LANGUAGES CXX C
+    LANGUAGES CXX C  # Only C and C++, no CUDA
 )
 
 # ============================================================================
@@ -36,20 +36,13 @@ message(STATUS "")
 # Add subdirectories for algorithm implementations
 # ============================================================================
 
-# Note: Each algorithm has its own CMakeLists.txt
-# Uncomment to enable specific algorithms
-
-# add_subdirectory(implementations/faiss)
-# add_subdirectory(implementations/diskann-ms)
-# add_subdirectory(implementations/candy)
-# add_subdirectory(implementations/puck)
-# add_subdirectory(implementations/SPTAG)
+# Build all C++ algorithm implementations
+add_subdirectory(implementations)
 
 # ============================================================================
 # Python Bindings
 # ============================================================================
-# Main Python bindings will be added here
-# For now, each algorithm builds its own .so file
+# Main Python bindings are built in implementations/
 
 # ============================================================================
 # Installation
@@ -68,6 +61,7 @@ if(NOT SKBUILD_STATE STREQUAL "editable")
         PATTERN "*.pyc" EXCLUDE
         PATTERN "tests" EXCLUDE
     )
+    # Note: .so files are installed by implementations/CMakeLists.txt
 endif()
 
 # ============================================================================

@@ -1,0 +1,15 @@
+include README.md
+include LICENSE
+include requirements.txt
+include requirements-dev.txt
+recursive-include python/sage_anns *.py
+recursive-include python/sage_anns *.so
+recursive-include implementations *.h *.hpp *.cpp *.c *.cc *.cu
+recursive-include implementations CMakeLists.txt *.cmake *.in
+# 强制包含zstd的build目录（通常build目录会被忽略）
+include implementations/SPTAG/ThirdParty/zstd/build/cmake/CMakeLists.txt
+recursive-include examples *.py
+recursive-include tests *.py
+global-exclude __pycache__
+global-exclude *.py[cod]
+global-exclude .DS_Store

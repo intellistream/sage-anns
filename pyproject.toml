@@ -15,7 +15,7 @@ build-backend = "scikit_build_core.build"
 
 [project]
 name = "isage-anns"
-version = "0.1.1"
+version = "0.1.3"
 description = "SAGE ANNS: Approximate Nearest Neighbor Search algorithms with unified Python interface"
 readme = "README.md"
 requires-python = ">=3.10"

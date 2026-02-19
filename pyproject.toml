@@ -71,9 +71,16 @@ logging.level = "INFO"
 wheel.packages = ["python/sage_anns"]
 
 # CMake 参数
+# DiskANN 需要 Intel MKL 完整开发包（含静态库和头文件），默认关闭。
+# 本地构建如需启用：CMAKE_ARGS="-DENABLE_DISKANN=ON -DMKL_INCLUDE_PATH=... -DMKL_PATH=..."
 cmake.args = [
     "-DENABLE_PYBIND=ON",
     "-DCMAKE_CXX_STANDARD=17",
+    "-DENABLE_DISKANN=OFF",
+    "-DENABLE_PUCK=OFF",
+    # 直接指定BLAS/LAPACK路径，绕过cmake发现机制（cmake 3.22有已知问题）
+    "-DBLAS_LIBRARIES=/lib/x86_64-linux-gnu/libopenblas.so",
+    "-DLAPACK_LIBRARIES=/lib/x86_64-linux-gnu/liblapack.so",
 ]
 
 # Wheel 配置

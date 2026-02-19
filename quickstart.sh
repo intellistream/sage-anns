@@ -78,6 +78,9 @@ if [[ "$(uname)" == "Linux" ]] && command -v apt-get &> /dev/null; then
     #   libboost-dev                 - required by DiskANN, SPTAG
     #   libboost-program-options-dev - required by DiskANN CLI
     #   libgflags-dev                - required by DiskANN
+    #   libgoogle-glog-dev           - required by SPTAG/DiskANN logging linkage
+    #   pkg-config                   - helps CMake locate glog/gflags metadata
+    #   ninja-build                  - faster and more stable CMake backend
     #   libopenblas-dev              - BLAS backend for FAISS, Puck
     #   liblapack-dev                - LAPACK (pairs with OpenBLAS)
     APT_DEPS=(
@@ -86,6 +89,9 @@ if [[ "$(uname)" == "Linux" ]] && command -v apt-get &> /dev/null; then
         libboost-dev
         libboost-program-options-dev
         libgflags-dev
+        libgoogle-glog-dev
+        pkg-config
+        ninja-build
         libopenblas-dev
         liblapack-dev
     )
@@ -203,7 +209,7 @@ read -r INSTALL_PY
 if [[ "$INSTALL_PY" =~ ^[Yy]$ ]]; then
     echo -e "${YELLOW}Installing in editable mode...${NC}"
     cd "$PROJECT_ROOT"
-    pip install -e .
+    python3 -m pip install -e .
     echo -e "${GREEN}✓ Python package installed${NC}"
 else
     echo -e "${YELLOW}Skipping Python package install${NC}"

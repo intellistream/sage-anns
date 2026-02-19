@@ -66,10 +66,47 @@ fi
 
 echo ""
 
-# Step 2: Check dependencies
+# Step 2: Check and install system dependencies
 echo -e "${CYAN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
-echo -e "${YELLOW}${BOLD}Step 2: Checking Dependencies${NC}"
+echo -e "${YELLOW}${BOLD}Step 2: Checking System Dependencies${NC}"
 echo -e "${CYAN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+
+# --- Auto-install missing apt packages (Linux only) ---
+if [[ "$(uname)" == "Linux" ]] && command -v apt-get &> /dev/null; then
+    # C++ build dependencies required by sage-anns implementations:
+    #   cmake, g++/build-essential   - basic C++ toolchain
+    #   libboost-dev                 - required by DiskANN, SPTAG
+    #   libboost-program-options-dev - required by DiskANN CLI
+    #   libgflags-dev                - required by DiskANN
+    #   libopenblas-dev              - BLAS backend for FAISS, Puck
+    #   liblapack-dev                - LAPACK (pairs with OpenBLAS)
+    APT_DEPS=(
+        cmake
+        build-essential
+        libboost-dev
+        libboost-program-options-dev
+        libgflags-dev
+        libopenblas-dev
+        liblapack-dev
+    )
+
+    MISSING_APT=()
+    for pkg in "${APT_DEPS[@]}"; do
+        if ! dpkg -s "$pkg" &>/dev/null; then
+            MISSING_APT+=("$pkg")
+        fi
+    done
+
+    if [[ ${#MISSING_APT[@]} -gt 0 ]]; then
+        echo -e "${YELLOW}⚠  Missing apt packages: ${MISSING_APT[*]}${NC}"
+        echo -e "${BLUE}Installing missing C++ build dependencies via apt...${NC}"
+        sudo apt-get update -qq
+        sudo apt-get install -y "${MISSING_APT[@]}"
+        echo -e "${GREEN}✓ apt dependencies installed${NC}"
+    else
+        echo -e "${GREEN}✓ All apt C++ build dependencies present${NC}"
+    fi
+fi
 
 # Check for CMake
 if command -v cmake &> /dev/null; then

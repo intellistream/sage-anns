@@ -247,6 +247,16 @@ class ThreadPerf {
                      group_fd, flags);
     }
 
+        static pid_t get_thread_id() {
+    #ifdef SYS_gettid
+      return static_cast<pid_t>(syscall(SYS_gettid));
+    #elif defined(__NR_gettid)
+      return static_cast<pid_t>(syscall(__NR_gettid));
+    #else
+      return getpid();
+    #endif
+        }
+
    public:
     /**
  * @struct default_attrs
@@ -258,7 +268,7 @@ class ThreadPerf {
     }
 
     PerfTool(pid_t pid, int cpu) {
-      if (pid == -1) { pid = gettid(); }
+      if (pid == -1) { pid = get_thread_id(); }
       myPid = pid;
       myCpu = cpu;
       int nr_counters = 32;

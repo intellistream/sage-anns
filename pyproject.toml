@@ -74,6 +74,8 @@ wheel.packages = ["python/sage_anns"]
 cmake.args = [
     "-DENABLE_PYBIND=ON",
     "-DCMAKE_CXX_STANDARD=17",
+    "-DSAGE_ANNS_BUILD_DISKANN=OFF",
+    "-DSAGE_ANNS_BUILD_PUCK=OFF",
 ]
 
 # Wheel 配置

@@ -17,6 +17,11 @@ set(SPTAG_DIR ${ALGORITHMS_IMPL_DIR}/SPTAG)
 set(PYBIND11_DIR ${ALGORITHMS_IMPL_DIR}/pybind11)
 set(CANDY_DIR ${ALGORITHMS_IMPL_DIR}/candy)
 
+# Optional components for packaging builds
+option(SAGE_ANNS_BUILD_DISKANN "Build DiskANN integration" ON)
+option(SAGE_ANNS_BUILD_PUCK "Build Puck integration" ON)
+option(SAGE_ANNS_BUILD_SPTAG "Build SPTAG integration" ON)
+
 # ========================================
 # 禁用CUDA支持 (CPU-only build)
 # ========================================
@@ -74,11 +79,13 @@ list(APPEND CMAKE_PREFIX_PATH
 )
 
 # 查找 Boost (DiskANN 需要)
-find_package(Boost 1.70 COMPONENTS program_options)
-if(NOT Boost_FOUND)
-    message(WARNING "Boost not found, trying alternative paths...")
-    set(CMAKE_PREFIX_PATH "/usr/lib/x86_64-linux-gnu/cmake;${CMAKE_PREFIX_PATH}")
+if(SAGE_ANNS_BUILD_DISKANN)
     find_package(Boost 1.70 COMPONENTS program_options)
+    if(NOT Boost_FOUND)
+        message(WARNING "Boost not found, trying alternative paths...")
+        set(CMAKE_PREFIX_PATH "/usr/lib/x86_64-linux-gnu/cmake;${CMAKE_PREFIX_PATH}")
+        find_package(Boost 1.70 COMPONENTS program_options)
+    endif()
 endif()
 
 # 查找 gflags (可选)
@@ -148,46 +155,62 @@ add_subdirectory(${FAISS_DIR} faiss_build)
 message(STATUS "Faiss library target: faiss")
 
 # 编译 DiskANN
-message(STATUS "Building DiskANN...")
-set(DISKANN_BUILD_PYTHON ON CACHE BOOL "Build DiskANN Python bindings")
-add_subdirectory(${DISKANN_DIR} diskann_build)
+if(SAGE_ANNS_BUILD_DISKANN)
+    message(STATUS "Building DiskANN...")
+    set(DISKANN_BUILD_PYTHON ON CACHE BOOL "Build DiskANN Python bindings")
+    add_subdirectory(${DISKANN_DIR} diskann_build)
+else()
+    message(STATUS "Skipping DiskANN (SAGE_ANNS_BUILD_DISKANN=OFF)")
+endif()
 
 # 编译 Puck (如果有 CMakeLists.txt)
-if(EXISTS ${PUCK_DIR}/CMakeLists.txt)
+if(SAGE_ANNS_BUILD_PUCK AND EXISTS ${PUCK_DIR}/CMakeLists.txt)
     message(STATUS "Building Puck...")
     add_subdirectory(${PUCK_DIR} puck_build)
+elseif(NOT SAGE_ANNS_BUILD_PUCK)
+    message(STATUS "Skipping Puck (SAGE_ANNS_BUILD_PUCK=OFF)")
 endif()
 
 # 编译 SPTAG (如果有 CMakeLists.txt)
-if(EXISTS ${SPTAG_DIR}/CMakeLists.txt)
+if(SAGE_ANNS_BUILD_SPTAG AND EXISTS ${SPTAG_DIR}/CMakeLists.txt)
     message(STATUS "Building SPTAG...")
     add_subdirectory(${SPTAG_DIR} sptag_build)
+elseif(NOT SAGE_ANNS_BUILD_SPTAG)
+    message(STATUS "Skipping SPTAG (SAGE_ANNS_BUILD_SPTAG=OFF)")
 endif()
 
 # 添加 pybind11
 add_subdirectory(${PYBIND11_DIR} pybind11_build)
 
 # 收集 DiskANN Python 绑定源文件（排除 module.cpp，因为它定义了独立的 PYBIND11_MODULE）
-file(GLOB DISKANN_PYTHON_SOURCES
-    "${DISKANN_DIR}/python/src/builder.cpp"
-    "${DISKANN_DIR}/python/src/dynamic_memory_index.cpp"
-    "${DISKANN_DIR}/python/src/static_disk_index.cpp"
-    "${DISKANN_DIR}/python/src/static_memory_index.cpp"
-)
+set(PYCANDY_SOURCES ${CANDY_SOURCES})
+if(SAGE_ANNS_BUILD_DISKANN)
+    file(GLOB DISKANN_PYTHON_SOURCES
+        "${DISKANN_DIR}/python/src/builder.cpp"
+        "${DISKANN_DIR}/python/src/dynamic_memory_index.cpp"
+        "${DISKANN_DIR}/python/src/static_disk_index.cpp"
+        "${DISKANN_DIR}/python/src/static_memory_index.cpp"
+    )
+    list(APPEND PYCANDY_SOURCES ${DISKANN_PYTHON_SOURCES})
+endif()
 
 # 编译 PyCANDYAlgo 模块
 message(STATUS "Building PyCANDYAlgo...")
 pybind11_add_module(PyCANDYAlgo
     MODULE
     bindings/PyCANDY.cpp
-    ${CANDY_SOURCES}
-    ${DISKANN_PYTHON_SOURCES}
+    ${PYCANDY_SOURCES}
 )
 
 # 设置模块属性，确保是 Python 扩展模块
 set_target_properties(PyCANDYAlgo PROPERTIES
     PREFIX ""
     OUTPUT_NAME "PyCANDYAlgo"
+)
+
+target_compile_definitions(PyCANDYAlgo PRIVATE
+    CANDY_DISKANN=$<BOOL:${SAGE_ANNS_BUILD_DISKANN}>
+    CANDY_PUCK=$<BOOL:${SAGE_ANNS_BUILD_PUCK}>
 )
 
 # 查找 torch_python 库
@@ -263,84 +286,90 @@ else()
 endif()
 
 # 必需: libaio (DiskANN 需要)
-find_library(AIO_LIB aio REQUIRED)
-if(NOT AIO_LIB)
-    message(FATAL_ERROR "libaio not found - install libaio-dev or libaio-devel")
-endif()
-list(APPEND PYCANDY_LIBS ${AIO_LIB})
-message(STATUS "Found libaio: ${AIO_LIB}")
+if(SAGE_ANNS_BUILD_DISKANN)
+    find_library(AIO_LIB aio REQUIRED)
+    if(NOT AIO_LIB)
+        message(FATAL_ERROR "libaio not found - install libaio-dev or libaio-devel")
+    endif()
+    list(APPEND PYCANDY_LIBS ${AIO_LIB})
+    message(STATUS "Found libaio: ${AIO_LIB}")
 
-# 必需: DiskANN (依赖 glog)
-if(TARGET diskann_s)
-    list(APPEND PYCANDY_LIBS diskann_s)
-else()
-    message(FATAL_ERROR "diskann_s target not found - DiskANN build failed")
+    # 必需: DiskANN (依赖 glog)
+    if(TARGET diskann_s)
+        list(APPEND PYCANDY_LIBS diskann_s)
+    else()
+        message(FATAL_ERROR "diskann_s target not found - DiskANN build failed")
+    endif()
 endif()
 
 # 必需: SPTAG
-if(TARGET SPTAGLibStatic)
-    list(APPEND PYCANDY_LIBS SPTAGLibStatic)
-else()
-    message(FATAL_ERROR "SPTAGLibStatic target not found - SPTAG build failed")
+if(SAGE_ANNS_BUILD_SPTAG)
+    if(TARGET SPTAGLibStatic)
+        list(APPEND PYCANDY_LIBS SPTAGLibStatic)
+    else()
+        message(FATAL_ERROR "SPTAGLibStatic target not found - SPTAG build failed")
+    endif()
 endif()
 
 # 必需: Puck
-if(TARGET puck)
-    list(APPEND PYCANDY_LIBS puck)
-else()
-    message(FATAL_ERROR "puck target not found - Puck build failed")
-endif()
-
-# MKL 库（Puck 依赖）- 使用 find_package 或直接查找
-if(DEFINED ENV{MKLROOT})
-    set(MKLROOT $ENV{MKLROOT})
-    message(STATUS "Using MKL from MKLROOT: ${MKLROOT}")
-
-    # 添加 MKL 链接目录
-    link_directories(${MKLROOT}/lib/intel64)
-
-    # 按正确顺序链接 MKL
-    list(APPEND PYCANDY_LIBS
-        mkl_intel_ilp64
-        mkl_intel_thread
-        mkl_core
-        iomp5
-    )
-else()
-    # 尝试直接查找 MKL 库
-    find_library(MKL_INTEL_ILP64 mkl_intel_ilp64
-        PATHS /opt/intel/oneapi/mkl/latest/lib/intel64 /opt/intel/mkl/lib/intel64
-        NO_DEFAULT_PATH)
-    find_library(MKL_INTEL_THREAD mkl_intel_thread
-        PATHS /opt/intel/oneapi/mkl/latest/lib/intel64 /opt/intel/mkl/lib/intel64
-        NO_DEFAULT_PATH)
-    find_library(MKL_CORE mkl_core
-        PATHS /opt/intel/oneapi/mkl/latest/lib/intel64 /opt/intel/mkl/lib/intel64
-        NO_DEFAULT_PATH)
-    find_library(IOMP5 iomp5
-        PATHS /opt/intel/oneapi/mkl/latest/lib/intel64 /opt/intel/mkl/lib/intel64
-              /opt/intel/oneapi/compiler/latest/linux/compiler/lib/intel64_lin
-        NO_DEFAULT_PATH)
-
-    if(MKL_INTEL_ILP64 AND MKL_INTEL_THREAD AND MKL_CORE)
-        message(STATUS "Found MKL libraries:")
-        message(STATUS "  MKL_INTEL_ILP64: ${MKL_INTEL_ILP64}")
-        message(STATUS "  MKL_INTEL_THREAD: ${MKL_INTEL_THREAD}")
-        message(STATUS "  MKL_CORE: ${MKL_CORE}")
-        message(STATUS "  IOMP5: ${IOMP5}")
-
-        list(APPEND PYCANDY_LIBS
-            ${MKL_INTEL_ILP64}
-            ${MKL_INTEL_THREAD}
-            ${MKL_CORE}
-        )
-
-        if(IOMP5)
-            list(APPEND PYCANDY_LIBS ${IOMP5})
-        endif()
+if(SAGE_ANNS_BUILD_PUCK)
+    if(TARGET puck)
+        list(APPEND PYCANDY_LIBS puck)
     else()
-        message(WARNING "MKL libraries not found - Puck may not work properly")
-        message(WARNING "Install Intel MKL or set MKLROOT environment variable")
+        message(FATAL_ERROR "puck target not found - Puck build failed")
+    endif()
+
+    # MKL 库（Puck 依赖）- 使用 find_package 或直接查找
+    if(DEFINED ENV{MKLROOT})
+        set(MKLROOT $ENV{MKLROOT})
+        message(STATUS "Using MKL from MKLROOT: ${MKLROOT}")
+
+        # 添加 MKL 链接目录
+        link_directories(${MKLROOT}/lib/intel64)
+
+        # 按正确顺序链接 MKL
+        list(APPEND PYCANDY_LIBS
+            mkl_intel_ilp64
+            mkl_intel_thread
+            mkl_core
+            iomp5
+        )
+    else()
+        # 尝试直接查找 MKL 库
+        find_library(MKL_INTEL_ILP64 mkl_intel_ilp64
+            PATHS /opt/intel/oneapi/mkl/latest/lib/intel64 /opt/intel/mkl/lib/intel64
+            NO_DEFAULT_PATH)
+        find_library(MKL_INTEL_THREAD mkl_intel_thread
+            PATHS /opt/intel/oneapi/mkl/latest/lib/intel64 /opt/intel/mkl/lib/intel64
+            NO_DEFAULT_PATH)
+        find_library(MKL_CORE mkl_core
+            PATHS /opt/intel/oneapi/mkl/latest/lib/intel64 /opt/intel/mkl/lib/intel64
+            NO_DEFAULT_PATH)
+        find_library(IOMP5 iomp5
+            PATHS /opt/intel/oneapi/mkl/latest/lib/intel64 /opt/intel/mkl/lib/intel64
+                  /opt/intel/oneapi/compiler/latest/linux/compiler/lib/intel64_lin
+            NO_DEFAULT_PATH)
+
+        if(MKL_INTEL_ILP64 AND MKL_INTEL_THREAD AND MKL_CORE)
+            message(STATUS "Found MKL libraries:")
+            message(STATUS "  MKL_INTEL_ILP64: ${MKL_INTEL_ILP64}")
+            message(STATUS "  MKL_INTEL_THREAD: ${MKL_INTEL_THREAD}")
+            message(STATUS "  MKL_CORE: ${MKL_CORE}")
+            message(STATUS "  IOMP5: ${IOMP5}")
+
+            list(APPEND PYCANDY_LIBS
+                ${MKL_INTEL_ILP64}
+                ${MKL_INTEL_THREAD}
+                ${MKL_CORE}
+            )
+
+            if(IOMP5)
+                list(APPEND PYCANDY_LIBS ${IOMP5})
+            endif()
+        else()
+            message(WARNING "MKL libraries not found - Puck may not work properly")
+            message(WARNING "Install Intel MKL or set MKLROOT environment variable")
+        endif()
     endif()
 endif()
 

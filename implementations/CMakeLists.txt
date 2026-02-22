@@ -442,7 +442,7 @@ endif()
 # 设置输出目录和编译选项
 set_target_properties(PyCANDYAlgo PROPERTIES
     LIBRARY_OUTPUT_DIRECTORY ${ALGORITHMS_IMPL_DIR}
-    CXX_STANDARD 20
+    CXX_STANDARD 17
     # 不设置 SUFFIX，让 pybind11 自动处理
     CXX_VISIBILITY_PRESET "default"
     VISIBILITY_INLINES_HIDDEN OFF

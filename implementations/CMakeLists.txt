@@ -21,6 +21,7 @@ set(CANDY_DIR ${ALGORITHMS_IMPL_DIR}/candy)
 option(SAGE_ANNS_BUILD_DISKANN "Build DiskANN integration" ON)
 option(SAGE_ANNS_BUILD_PUCK "Build Puck integration" ON)
 option(SAGE_ANNS_BUILD_SPTAG "Build SPTAG integration" ON)
+option(SAGE_ANNS_TORCH_FROM_PYTHON "Detect Torch CMake path via Python import" ON)
 
 # ========================================
 # 禁用CUDA支持 (CPU-only build)
@@ -39,19 +40,28 @@ if(NOT Python_FOUND)
     find_package(Python REQUIRED COMPONENTS Interpreter Development.Module)
 endif()
 
-# 强制使用CPU版本的PyTorch（优先使用~/.local中的版本）
-execute_process(
-    COMMAND ${Python_EXECUTABLE} -c "import torch; import os; print(os.path.join(os.path.dirname(torch.__file__), 'share/cmake'))"
-    OUTPUT_VARIABLE TORCH_CMAKE_PATH
-    OUTPUT_STRIP_TRAILING_WHITESPACE
-    RESULT_VARIABLE TORCH_CMAKE_RESULT
-)
+# Prefer Torch_DIR if provided (avoids importing torch during configure)
+if(DEFINED Torch_DIR)
+    list(PREPEND CMAKE_PREFIX_PATH "${Torch_DIR}")
+elseif(DEFINED ENV{Torch_DIR})
+    list(PREPEND CMAKE_PREFIX_PATH "$ENV{Torch_DIR}")
+endif()
 
-if(TORCH_CMAKE_RESULT EQUAL 0)
-    message(STATUS "Using PyTorch CMake from: ${TORCH_CMAKE_PATH}")
-    set(CMAKE_PREFIX_PATH "${TORCH_CMAKE_PATH};${CMAKE_PREFIX_PATH}")
-else()
-    message(WARNING "Could not detect PyTorch CMake path from Python")
+# Optionally detect Torch CMake path via Python
+if(SAGE_ANNS_TORCH_FROM_PYTHON)
+    execute_process(
+        COMMAND ${Python_EXECUTABLE} -c "import torch; import os; print(os.path.join(os.path.dirname(torch.__file__), 'share/cmake'))"
+        OUTPUT_VARIABLE TORCH_CMAKE_PATH
+        OUTPUT_STRIP_TRAILING_WHITESPACE
+        RESULT_VARIABLE TORCH_CMAKE_RESULT
+    )
+
+    if(TORCH_CMAKE_RESULT EQUAL 0)
+        message(STATUS "Using PyTorch CMake from: ${TORCH_CMAKE_PATH}")
+        set(CMAKE_PREFIX_PATH "${TORCH_CMAKE_PATH};${CMAKE_PREFIX_PATH}")
+    else()
+        message(WARNING "Could not detect PyTorch CMake path from Python")
+    endif()
 endif()
 
 # 在查找 Torch 之前，设置 Caffe2 不使用 CUDA

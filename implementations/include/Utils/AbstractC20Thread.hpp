@@ -9,7 +9,13 @@
 
 #include <thread>
 #include <memory>
+#if __has_include(<barrier>)
 #include <barrier>
+#define INTELLI_HAS_BARRIER 1
+#else
+#include <cstddef>
+#define INTELLI_HAS_BARRIER 0
+#endif
 /**
  * @defgroup INTELLI_UTIL Shared Utils with other Intelli Stream programs
  * @{
@@ -75,7 +81,16 @@ typedef std::shared_ptr<AbstractC20Thread> AbstractC20ThreadPtr;
  * @brief (Macro) To creat a new @ref newAbstractC20Thread under shared pointer.
  */
 #define  newAbstractC20Thread std::make_shared<INTELLI::AbstractC20Thread>
+#if INTELLI_HAS_BARRIER
 typedef std::shared_ptr<std::barrier<>> BarrierPtr;
+#else
+class Barrier {
+ public:
+  explicit Barrier(std::ptrdiff_t) {}
+  void arrive_and_wait() {}
+};
+typedef std::shared_ptr<Barrier> BarrierPtr;
+#endif
 }
 
 

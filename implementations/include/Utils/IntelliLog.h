@@ -8,7 +8,6 @@
 #include <sstream>
 #include <chrono>
 #include <iostream>
-#include <source_location>
 #include <ctime>
 #include <mutex>
 #include <fstream>
@@ -37,7 +36,9 @@ class IntelliLog {
    */
   static void log(std::string level,
                   std::string_view message,
-                  std::source_location const source = std::source_location::current());
+                  const char *file,
+                  int line,
+                  const char *function);
 
   /**
    * @brief set up the logging file by its name
@@ -110,24 +111,24 @@ class IntelliLog_FileProtector {
  * @def INTELLI_INFO
  * @brief (Macro) To log something as information
  */
-#define INTELLI_INFO(n) INTELLI::IntelliLog::log("INFO",n)
+#define INTELLI_INFO(n) INTELLI::IntelliLog::log("INFO", n, __FILE__, __LINE__, __func__)
 /**
  * @ingroup INTELLI_UTIL_INTELLILOG
  * @def INTELLI_ERROR
  * @brief (Macro) To log something as error
  */
-#define INTELLI_ERROR(n) INTELLI::IntelliLog::log("ERROR",n)
+#define INTELLI_ERROR(n) INTELLI::IntelliLog::log("ERROR", n, __FILE__, __LINE__, __func__)
 /**
  * @ingroup INTELLI_UTIL_INTELLILOG
  * @def INTELLI_Warning
  * @brief (Macro) To log something as warnning
  */
-#define INTELLI_WARNING(n) INTELLI::IntelliLog::log("WARNING",n)
+#define INTELLI_WARNING(n) INTELLI::IntelliLog::log("WARNING", n, __FILE__, __LINE__, __func__)
 /**
  * @ingroup INTELLI_UTIL_INTELLILOG
  * @def INTELLI_DEBUG
  * @brief (Macro) To log something as debug
  */
-#define INTELLI_DEBUG(n) IntelliLog::log("DEBUG",n)
+#define INTELLI_DEBUG(n) INTELLI::IntelliLog::log("DEBUG", n, __FILE__, __LINE__, __func__)
 }
 #endif

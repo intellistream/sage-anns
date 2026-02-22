@@ -17,7 +17,11 @@ void INTELLI::IntelliLog::setupLoggingFile(string fname) {
   fp_doNotTouchMe.openLogFile(fname);
 }
 
-void INTELLI::IntelliLog::log(std::string level, std::string_view message, const std::source_location source) {
+void INTELLI::IntelliLog::log(std::string level,
+                              std::string_view message,
+                              const char *file,
+                              int line,
+                              const char *function) {
   time_t now = time(0);
 
   // 把 now 转换为字符串形式
@@ -27,11 +31,11 @@ void INTELLI::IntelliLog::log(std::string level, std::string_view message, const
   str += dt;
   //str+= static_cast<char>(level);
   str += ":";
-  str += source.file_name();
+  str += file ? file : "unknown";
   str += ":";
-  str += to_string(source.line());
+  str += to_string(line);
   str += +"|";
-  str += +source.function_name();
+  str += function ? function : "unknown";
   str += +"|";
 
   if (level == "DEBUG") {

@@ -6,7 +6,14 @@
 
 #include <string>
 #include <experimental/filesystem>
+#include <memory>
+#if __has_include(<barrier>)
 #include <barrier>
+#define INTELLI_HAS_BARRIER 1
+#else
+#include <cstddef>
+#define INTELLI_HAS_BARRIER 0
+#endif
 #include <functional>
 //#include <torch/torch.h>
 //#include <ATen/ATen.h>
@@ -24,7 +31,16 @@
 #include <sys/time.h>
 
 namespace INTELLI {
+#if INTELLI_HAS_BARRIER
 typedef std::shared_ptr<std::barrier<>> BarrierPtr;
+#else
+class Barrier {
+ public:
+  explicit Barrier(std::ptrdiff_t) {}
+  void arrive_and_wait() {}
+};
+typedef std::shared_ptr<Barrier> BarrierPtr;
+#endif
 #define TIME_LAST_UNIT_MS 1000
 #define TIME_LAST_UNIT_US 1000000
 #define chronoElapsedTime(start) std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::high_resolution_clock::now() - start).count()

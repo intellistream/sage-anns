@@ -34,11 +34,14 @@ namespace INTELLI {
 #if INTELLI_HAS_BARRIER
 typedef std::shared_ptr<std::barrier<>> BarrierPtr;
 #else
+#ifndef INTELLI_BARRIER_FALLBACK_DEFINED
+#define INTELLI_BARRIER_FALLBACK_DEFINED
 class Barrier {
  public:
   explicit Barrier(std::ptrdiff_t) {}
   void arrive_and_wait() {}
 };
+#endif
 typedef std::shared_ptr<Barrier> BarrierPtr;
 #endif
 #define TIME_LAST_UNIT_MS 1000

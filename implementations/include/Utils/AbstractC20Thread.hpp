@@ -84,11 +84,14 @@ typedef std::shared_ptr<AbstractC20Thread> AbstractC20ThreadPtr;
 #if INTELLI_HAS_BARRIER
 typedef std::shared_ptr<std::barrier<>> BarrierPtr;
 #else
+#ifndef INTELLI_BARRIER_FALLBACK_DEFINED
+#define INTELLI_BARRIER_FALLBACK_DEFINED
 class Barrier {
  public:
   explicit Barrier(std::ptrdiff_t) {}
   void arrive_and_wait() {}
 };
+#endif
 typedef std::shared_ptr<Barrier> BarrierPtr;
 #endif
 }

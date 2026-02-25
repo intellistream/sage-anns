@@ -43,9 +43,9 @@ jobs:
             libaio-devel pkgconfig ninja-build
           CIBW_BEFORE_BUILD: >-
             python -m pip install --upgrade pip cmake ninja &&
-            python -m pip install --no-cache-dir torch --index-url https://download.pytorch.org/whl/cpu
+            python -m pip install --no-cache-dir torch --extra-index-url https://download.pytorch.org/whl/cpu
           CIBW_REPAIR_WHEEL_COMMAND: >-
-            bash -lc "TORCH_LIB=$(python -c \"import os, torch; print(os.path.join(os.path.dirname(torch.__file__), 'lib'))\") && auditwheel repair -w {dest_dir} {wheel} --lib-sdir $TORCH_LIB"
+            bash -lc 'TORCH_LIB=$(python -c "import os, torch; print(os.path.join(os.path.dirname(torch.__file__), \"lib\"))") && LD_LIBRARY_PATH="$TORCH_LIB:$LD_LIBRARY_PATH" auditwheel repair -w {dest_dir} {wheel} --lib-sdir "$TORCH_LIB"'
         run: |
           cibuildwheel --output-dir dist
 

@@ -1,4 +1,5 @@
 #include <Utils/Meters/AbstractMeter.hpp>
+#include <unistd.h>
 
 void DIVERSE_METER::AbstractMeter::testStaticPower(uint64_t sleepingSecond) {
   startMeter();

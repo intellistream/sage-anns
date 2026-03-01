@@ -1,7 +1,8 @@
 import pytest
+from pytest import approx  # noqa: PT013
+
 from pybind11_tests import ConstructorStats
 from pybind11_tests import sequences_and_iterators as m
-from pytest import approx  # noqa: PT013
 
 
 def test_slice_constructors():

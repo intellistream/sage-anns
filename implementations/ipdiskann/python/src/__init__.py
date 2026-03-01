@@ -7,7 +7,7 @@
 
 It also includes a few nascent [utilities](#utilities).
 
-And lastly, it makes substantial use of type hints, with various shorthand [type aliases](#parameter-and-response-type-aliases) documented. 
+And lastly, it makes substantial use of type hints, with various shorthand [type aliases](#parameter-and-response-type-aliases) documented.
 When reading the `diskannpy` code we refer to the type aliases, though `pdoc` helpfully expands them.
 
 ## Index Builders
@@ -49,7 +49,7 @@ from numpy import typing as npt
 
 DistanceMetric = Literal["l2", "mips", "cosine"]
 """ Type alias for one of {"l2", "mips", "cosine"} """
-VectorDType = Union[Type[np.float32], Type[np.int8], Type[np.uint8]]
+VectorDType = Union[type[np.float32], type[np.int8], type[np.uint8]]
 """ Type alias for one of {`numpy.float32`, `numpy.int8`, `numpy.uint8`} """
 VectorLike = npt.NDArray[VectorDType]
 """ Type alias for something that can be treated as a vector """

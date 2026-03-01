@@ -1,7 +1,7 @@
 # Copyright (c) Microsoft Corporation. All rights reserved.
 # Licensed under the MIT license.
 
-from typing import BinaryIO, Optional, overload
+from typing import BinaryIO, overload
 
 import numpy as np
 
@@ -48,7 +48,7 @@ def build_memory_index(
     num_pq_bytes: int,
     use_opq: bool,
     tags: Union[str, VectorIdentifierBatch],
-    filter_labels: Optional[list[list[str]]],
+    filter_labels: list[list[str]] | None,
     universal_label: str,
     filter_complexity: int,
     index_prefix: str
@@ -67,7 +67,7 @@ def build_memory_index(
     use_opq: bool,
     vector_dtype: VectorDType,
     tags: Union[str, VectorIdentifierBatch],
-    filter_labels_file: Optional[list[list[str]]],
+    filter_labels_file: list[list[str]] | None,
     universal_label: str,
     filter_complexity: int,
     index_prefix: str

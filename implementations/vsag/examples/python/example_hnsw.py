@@ -12,12 +12,10 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
-import pyvsag
-import numpy as np
-import pickle
-import sys
 import json
 
+import numpy as np
+import pyvsag
 
 
 def cal_recall(index, ids, data, k, search_params):
@@ -29,7 +27,6 @@ def cal_recall(index, ids, data, k, search_params):
     return correct / len(ids)
 
 
-
 def float32_hnsw_test():
     dim = 128
     num_elements = 10000
@@ -39,33 +36,28 @@ def float32_hnsw_test():
     data = np.float32(np.random.random((num_elements, dim)))
 
     # Declaring index
-    index_params = json.dumps({
-        "dtype": "float32",
-        "metric_type": "l2",
-        "dim": dim,
-        "hnsw": {
-            "max_degree": 16,
-            "ef_construction": 100
+    index_params = json.dumps(
+        {
+            "dtype": "float32",
+            "metric_type": "l2",
+            "dim": dim,
+            "hnsw": {"max_degree": 16, "ef_construction": 100},
         }
-    })
+    )
     index = pyvsag.Index("hnsw", index_params)
 
-    index.build(vectors=data,
-                ids=ids,
-                num_elements=num_elements,
-                dim=dim)
-    
+    index.build(vectors=data, ids=ids, num_elements=num_elements, dim=dim)
+
     search_params = json.dumps({"hnsw": {"ef_search": 100}})
-    
+
     print("[build] float32 recall:", cal_recall(index, ids, data, 11, search_params))
     filename = "./example_hnsw.index"
     file_sizes = index.save(filename)
-    
+
     index = pyvsag.Index("hnsw", index_params)
     index.load(filename)
     print("float32 recall:", cal_recall(index, ids, data, 11, search_params))
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     float32_hnsw_test()
-

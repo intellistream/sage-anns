@@ -12,11 +12,10 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
-import pyvsag
-import numpy as np
-import pickle
-import sys
 import json
+
+import numpy as np
+import pyvsag
 
 
 def cal_recall(index, ids, data, k, search_params):
@@ -37,32 +36,25 @@ def float32_diskann_test():
     data = np.float32(np.random.random((num_elements, dim)))
 
     # Declaring index
-    index_params = json.dumps({
-        "dtype": "float32",
-        "metric_type": "l2",
-        "dim": dim,
-        "diskann": {
-            "max_degree": 32,
-            "ef_construction": 100,
-            "pq_sample_rate": 0.5,
-            "pq_dims": 32,
-            "use_pq_search": True
+    index_params = json.dumps(
+        {
+            "dtype": "float32",
+            "metric_type": "l2",
+            "dim": dim,
+            "diskann": {
+                "max_degree": 32,
+                "ef_construction": 100,
+                "pq_sample_rate": 0.5,
+                "pq_dims": 32,
+                "use_pq_search": True,
+            },
         }
-    })
+    )
     index = pyvsag.Index("diskann", index_params)
 
-    index.build(vectors=data,
-                ids=ids,
-                num_elements=num_elements,
-                dim=dim)
+    index.build(vectors=data, ids=ids, num_elements=num_elements, dim=dim)
 
-    search_params = json.dumps({
-        "diskann": {
-            "ef_search": 100,
-            "beam_search": 4,
-            "io_limit": 200
-        }
-    })
+    search_params = json.dumps({"diskann": {"ef_search": 100, "beam_search": 4, "io_limit": 200}})
     print("[build] float32 recall:", cal_recall(index, ids, data, 11, search_params))
 
     root_dir = "/tmp/"
@@ -77,5 +69,5 @@ def float32_diskann_test():
     print("[disk] float32 recall:", cal_recall(index, ids, data, 11, search_params))
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     float32_diskann_test()

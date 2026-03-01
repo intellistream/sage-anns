@@ -1,7 +1,8 @@
 from unittest import mock
 
-import env
 import pytest
+
+import env
 from pybind11_tests import ConstructorStats, UserType
 from pybind11_tests import class_ as m
 
@@ -43,7 +44,9 @@ def test_type():
     with pytest.raises(RuntimeError) as execinfo:
         m.check_type(0)
 
-    assert "pybind11::detail::get_type_info: unable to find type info" in str(execinfo.value)
+    assert "pybind11::detail::get_type_info: unable to find type info" in str(
+        execinfo.value
+    )
     assert "Invalid" in str(execinfo.value)
 
     # Currently not supported
@@ -206,7 +209,9 @@ def test_inheritance_init(msg):
     "mock_return_value", [None, (1, 2, 3), m.Pet("Polly", "parrot"), m.Dog("Molly")]
 )
 def test_mock_new(mock_return_value):
-    with mock.patch.object(m.Pet, "__new__", return_value=mock_return_value) as mock_new:
+    with mock.patch.object(
+        m.Pet, "__new__", return_value=mock_return_value
+    ) as mock_new:
         obj = m.Pet("Noname", "Nospecies")
     assert obj is mock_return_value
     mock_new.assert_called_once_with(m.Pet, "Noname", "Nospecies")
@@ -488,4 +493,7 @@ def test_register_duplicate_class():
 
 
 def test_pr4220_tripped_over_this():
-    assert m.Empty0().get_msg() == "This is really only meant to exercise successful compilation."
+    assert (
+        m.Empty0().get_msg()
+        == "This is really only meant to exercise successful compilation."
+    )

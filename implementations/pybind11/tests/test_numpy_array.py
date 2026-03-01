@@ -1,5 +1,6 @@
-import env  # noqa: F401
 import pytest
+
+import env  # noqa: F401
 from pybind11_tests import numpy_array as m
 
 np = pytest.importorskip("numpy")
@@ -16,10 +17,12 @@ def test_dtypes():
         print(check)
         assert check.numpy == check.pybind11, check
         if check.numpy.num != check.pybind11.num:
-            print(f"NOTE: typenum mismatch for {check}: {check.numpy.num} != {check.pybind11.num}")
+            print(
+                f"NOTE: typenum mismatch for {check}: {check.numpy.num} != {check.pybind11.num}"
+            )
 
 
-@pytest.fixture()
+@pytest.fixture
 def arr():
     return np.array([[1, 2, 3], [4, 5, 6]], "=u2")
 
@@ -63,7 +66,9 @@ def test_array_attributes():
     assert not m.owndata(a)
 
 
-@pytest.mark.parametrize(("args", "ret"), [([], 0), ([0], 0), ([1], 3), ([0, 1], 1), ([1, 2], 5)])
+@pytest.mark.parametrize(
+    ("args", "ret"), [([], 0), ([0], 0), ([1], 3), ([0, 1], 1), ([1, 2], 5)]
+)
 def test_index_offset(arr, args, ret):
     assert m.index_at(arr, *args) == ret
     assert m.index_at_t(arr, *args) == ret
@@ -383,7 +388,9 @@ def test_array_unchecked_fixed_dims(msg):
 
     with pytest.raises(ValueError) as excinfo:
         m.proxy_add2(np.array([1.0, 2, 3]), 5.0)
-    assert msg(excinfo.value) == "array has incorrect number of dimensions: 1; expected 2"
+    assert (
+        msg(excinfo.value) == "array has incorrect number of dimensions: 1; expected 2"
+    )
 
     expect_c = np.ndarray(shape=(3, 3, 3), buffer=np.array(range(3, 30)), dtype="int")
     assert np.all(m.proxy_init3(3.0) == expect_c)
@@ -530,7 +537,11 @@ def test_format_descriptors_for_floating_point_types(test_func):
 @pytest.mark.parametrize("noconvert", [False, True])
 @pytest.mark.filterwarnings(
     "ignore:Casting complex values to real discards the imaginary part:"
-    + ("numpy.exceptions.ComplexWarning" if hasattr(np, "exceptions") else "numpy.ComplexWarning")
+    + (
+        "numpy.exceptions.ComplexWarning"
+        if hasattr(np, "exceptions")
+        else "numpy.ComplexWarning"
+    )
 )
 def test_argument_conversions(forcecast, contiguity, noconvert):
     function_name = "accept_double"
@@ -558,14 +569,18 @@ def test_argument_conversions(forcecast, contiguity, noconvert):
                     # trivially contiguous.
                     trivially_contiguous = sum(1 for d in shape if d > 1) <= 1
                     should_raise = dtype.name != "float64" or (
-                        contiguity is not None and contiguity != order and not trivially_contiguous
+                        contiguity is not None
+                        and contiguity != order
+                        and not trivially_contiguous
                     )
 
                 array = np.zeros(shape, dtype=dtype, order=order)
                 if not should_raise:
                     function(array)
                 else:
-                    with pytest.raises(TypeError, match="incompatible function arguments"):
+                    with pytest.raises(
+                        TypeError, match="incompatible function arguments"
+                    ):
                         function(array)
 
 
@@ -628,7 +643,9 @@ def test_pass_array_pyobject_ptr_return_sum_str_values_ndarray():
 def test_pass_array_pyobject_ptr_return_sum_str_values_list():
     # Intentionally all temporaries, do not change.
     assert (
-        m.pass_array_pyobject_ptr_return_sum_str_values(WrapWithPyValueHolder(2, "three", -4.0))
+        m.pass_array_pyobject_ptr_return_sum_str_values(
+            WrapWithPyValueHolder(2, "three", -4.0)
+        )
         == "2three-4.0"
     )
 

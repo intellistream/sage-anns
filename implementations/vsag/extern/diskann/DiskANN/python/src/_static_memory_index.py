@@ -3,7 +3,6 @@
 
 import os
 import warnings
-from typing import Optional
 
 import numpy as np
 
@@ -40,9 +39,9 @@ class StaticMemoryIndex:
         num_threads: int,
         initial_search_complexity: int,
         index_prefix: str = "ann",
-        distance_metric: Optional[DistanceMetric] = None,
-        vector_dtype: Optional[VectorDType] = None,
-        dimensions: Optional[int] = None,
+        distance_metric: DistanceMetric | None = None,
+        vector_dtype: VectorDType | None = None,
+        dimensions: int | None = None,
     ):
         """
         ### Parameters
@@ -85,9 +84,7 @@ class StaticMemoryIndex:
         dap_metric = _valid_metric(metric)
 
         _assert_is_nonnegative_uint32(num_threads, "num_threads")
-        _assert_is_positive_uint32(
-            initial_search_complexity, "initial_search_complexity"
-        )
+        _assert_is_positive_uint32(initial_search_complexity, "initial_search_complexity")
 
         self._vector_dtype = vector_dtype
         self._dimensions = dims
@@ -108,9 +105,7 @@ class StaticMemoryIndex:
             initial_search_complexity=initial_search_complexity,
         )
 
-    def search(
-        self, query: VectorLike, k_neighbors: int, complexity: int
-    ) -> QueryResponse:
+    def search(self, query: VectorLike, k_neighbors: int, complexity: int) -> QueryResponse:
         """
         Searches the index by a single query vector.
 

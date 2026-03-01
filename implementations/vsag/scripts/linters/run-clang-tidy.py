@@ -36,7 +36,6 @@ http://clang.llvm.org/docs/HowToSetupToolingForLLVM.html
 
 import argparse
 import asyncio
-from dataclasses import dataclass
 import glob
 import json
 import multiprocessing
@@ -48,11 +47,12 @@ import sys
 import tempfile
 import time
 import traceback
+from collections.abc import Awaitable, Callable
+from dataclasses import dataclass
 from types import ModuleType
-from typing import Any, Awaitable, Callable, List, Optional, TypeVar
+from typing import Any, TypeVar
 
-
-yaml: Optional[ModuleType] = None
+yaml: ModuleType | None = None
 try:
     import yaml
 except ImportError:
@@ -69,9 +69,7 @@ def strtobool(val: str) -> bool:
         return False
 
     # Return ArgumentTypeError so that argparse does not substitute its own error message
-    raise argparse.ArgumentTypeError(
-        f"'{val}' is invalid value for boolean argument! Try 0 or 1."
-    )
+    raise argparse.ArgumentTypeError(f"'{val}' is invalid value for boolean argument! Try 0 or 1.")
 
 
 def find_compilation_database(path: str) -> str:
@@ -90,22 +88,22 @@ def get_tidy_invocation(
     f: str,
     clang_tidy_binary: str,
     checks: str,
-    tmpdir: Optional[str],
+    tmpdir: str | None,
     build_path: str,
-    header_filter: Optional[str],
+    header_filter: str | None,
     allow_enabling_alpha_checkers: bool,
-    extra_arg: List[str],
-    extra_arg_before: List[str],
+    extra_arg: list[str],
+    extra_arg_before: list[str],
     quiet: bool,
     config_file_path: str,
     config: str,
-    line_filter: Optional[str],
+    line_filter: str | None,
     use_color: bool,
-    plugins: List[str],
-    warnings_as_errors: Optional[str],
-    exclude_header_filter: Optional[str],
+    plugins: list[str],
+    warnings_as_errors: str | None,
+    exclude_header_filter: str | None,
     allow_no_checks: bool,
-) -> List[str]:
+) -> list[str]:
     """Gets a command line for clang-tidy."""
     start = [clang_tidy_binary]
     if allow_enabling_alpha_checkers:
@@ -159,7 +157,7 @@ def merge_replacement_files(tmpdir: str, mergefile: str) -> None:
     mergekey = "Diagnostics"
     merged = []
     for replacefile in glob.iglob(os.path.join(tmpdir, "*.yaml")):
-        content = yaml.safe_load(open(replacefile, "r"))
+        content = yaml.safe_load(open(replacefile))
         if not content:
             continue  # Skip empty files.
         merged.extend(content.get(mergekey, []))
@@ -183,9 +181,7 @@ def find_binary(arg: str, name: str, build_path: str) -> str:
         if shutil.which(arg):
             return arg
         else:
-            raise SystemExit(
-                f"error: passed binary '{arg}' was not found or is not executable"
-            )
+            raise SystemExit(f"error: passed binary '{arg}' was not found or is not executable")
 
     built_path = os.path.join(build_path, "bin", name)
     binary = shutil.which(name) or shutil.which(built_path)
@@ -226,7 +222,7 @@ async def run_with_semaphore(
 @dataclass
 class ClangTidyResult:
     filename: str
-    invocation: List[str]
+    invocation: list[str]
     returncode: int
     stdout: str
     stderr: str
@@ -299,9 +295,7 @@ async def main() -> None:
         action="store_true",
         help="Allow alpha checkers from clang-analyzer.",
     )
-    parser.add_argument(
-        "-clang-tidy-binary", metavar="PATH", help="Path to clang-tidy binary."
-    )
+    parser.add_argument("-clang-tidy-binary", metavar="PATH", help="Path to clang-tidy binary.")
     parser.add_argument(
         "-clang-apply-replacements-binary",
         metavar="PATH",
@@ -392,9 +386,7 @@ async def main() -> None:
         help="Files to be processed (regex on path).",
     )
     parser.add_argument("-fix", action="store_true", help="apply fix-its.")
-    parser.add_argument(
-        "-format", action="store_true", help="Reformat code after applying fixes."
-    )
+    parser.add_argument("-format", action="store_true", help="Reformat code after applying fixes.")
     parser.add_argument(
         "-style",
         default="file",
@@ -426,9 +418,7 @@ async def main() -> None:
         default=[],
         help="Additional argument to prepend to the compiler command line.",
     )
-    parser.add_argument(
-        "-quiet", action="store_true", help="Run clang-tidy in quiet mode."
-    )
+    parser.add_argument("-quiet", action="store_true", help="Run clang-tidy in quiet mode.")
     parser.add_argument(
         "-load",
         dest="plugins",
@@ -464,13 +454,11 @@ async def main() -> None:
         )
 
     combine_fixes = False
-    export_fixes_dir: Optional[str] = None
+    export_fixes_dir: str | None = None
     delete_fixes_dir = False
     if args.export_fixes is not None:
         # if a directory is given, create it if it does not exist
-        if args.export_fixes.endswith(os.path.sep) and not os.path.isdir(
-            args.export_fixes
-        ):
+        if args.export_fixes.endswith(os.path.sep) and not os.path.isdir(args.export_fixes):
             os.makedirs(args.export_fixes)
 
         if not os.path.isdir(args.export_fixes):
@@ -512,9 +500,7 @@ async def main() -> None:
         invocation.append("-list-checks")
         invocation.append("-")
         # Even with -quiet we still want to check if we can call clang-tidy.
-        subprocess.check_call(
-            invocation, stdout=subprocess.DEVNULL if args.quiet else None
-        )
+        subprocess.check_call(invocation, stdout=subprocess.DEVNULL if args.quiet else None)
     except:
         print("Unable to run clang-tidy.", file=sys.stderr)
         sys.exit(1)
@@ -577,7 +563,9 @@ async def main() -> None:
             if result.returncode != 0:
                 returncode = 1
                 if result.returncode < 0:
-                    result.stderr += f"{result.filename}: terminated by signal {-result.returncode}\n"
+                    result.stderr += (
+                        f"{result.filename}: terminated by signal {-result.returncode}\n"
+                    )
             progress = f"[{i + 1: >{len(f'{len(files)}')}}/{len(files)}]"
             runtime = f"[{result.elapsed:.1f}s]"
             print(f"{progress}{runtime} {' '.join(result.invocation)}")

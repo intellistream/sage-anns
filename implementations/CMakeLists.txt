@@ -450,6 +450,11 @@ target_compile_options(PyCANDYAlgo PRIVATE
     -fvisibility=default
 )
 
+# 强制使用旧 ABI，和 GTI/n2 以及现有预编译依赖保持一致，避免链接/加载不兼容
+target_compile_definitions(PyCANDYAlgo PRIVATE
+    _GLIBCXX_USE_CXX11_ABI=0
+)
+
 # 添加链接选项，确保符号正确导出
 target_link_options(PyCANDYAlgo PRIVATE
     -Wl,--export-dynamic

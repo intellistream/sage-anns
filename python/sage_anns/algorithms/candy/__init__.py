@@ -5,24 +5,24 @@ All algorithms use the unified AbstractIndex interface.
 """
 
 from .base import CANDYIndex
-from .flat import CANDYFlatIndex
-from .nndescent import CANDYNNDescentIndex
-from .lshapg import CANDYLSHAPGIndex
-from .onlinepq import CANDYOnlinePQIndex
-from .dpg import CANDYDPGIndex
-from .faiss_wrapper import FAISSIndex, FAISSHNSWIndex
 from .diskann import DiskANNIndex
+from .dpg import CANDYDPGIndex
+from .faiss_wrapper import FAISSHNSWIndex, FAISSIndex
+from .flat import CANDYFlatIndex
+from .lshapg import CANDYLSHAPGIndex
+from .nndescent import CANDYNNDescentIndex
+from .onlinepq import CANDYOnlinePQIndex
 from .sptag import SPTAGIndex
 
 __all__ = [
-    'CANDYIndex',
-    'CANDYFlatIndex',
-    'CANDYNNDescentIndex',
-    'CANDYLSHAPGIndex',
-    'CANDYOnlinePQIndex',
-    'CANDYDPGIndex',
-    'FAISSIndex',
-    'FAISSHNSWIndex',
-    'DiskANNIndex',
-    'SPTAGIndex',
+    "CANDYIndex",
+    "CANDYFlatIndex",
+    "CANDYNNDescentIndex",
+    "CANDYLSHAPGIndex",
+    "CANDYOnlinePQIndex",
+    "CANDYDPGIndex",
+    "FAISSIndex",
+    "FAISSHNSWIndex",
+    "DiskANNIndex",
+    "SPTAGIndex",
 ]

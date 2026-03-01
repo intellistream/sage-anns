@@ -9,7 +9,7 @@ import os
 from dataclasses import dataclass
 from multiprocessing.pool import ThreadPool
 from time import perf_counter
-from typing import ClassVar, Optional
+from typing import ClassVar
 
 import faiss  # @manual=//faiss/python:pyfaiss_gpu
 import numpy as np
@@ -69,12 +69,14 @@ def refine_distances_range(
     with ThreadPool(32) as pool:
         R = pool.map(
             lambda i: (
-                np.sum(np.square(xq[i] - xb[I[lims[i] : lims[i + 1]]]), axis=1)
-                if metric == faiss.METRIC_L2
-                else np.tensordot(xq[i], xb[I[lims[i] : lims[i + 1]]], axes=(0, 1))
-            )
-            if lims[i + 1] > lims[i]
-            else [],
+                (
+                    np.sum(np.square(xq[i] - xb[I[lims[i] : lims[i + 1]]]), axis=1)
+                    if metric == faiss.METRIC_L2
+                    else np.tensordot(xq[i], xb[I[lims[i] : lims[i + 1]]], axes=(0, 1))
+                )
+                if lims[i + 1] > lims[i]
+                else []
+            ),
             range(len(lims) - 1),
         )
     return np.hstack(R)
@@ -231,7 +233,7 @@ class IndexBase:
 
     def get_knn_search_name(
         self,
-        search_parameters: Optional[dict[str, int]],
+        search_parameters: dict[str, int] | None,
         query_vectors: DatasetDescriptor,
         k: int,
     ):
@@ -243,7 +245,7 @@ class IndexBase:
 
     def knn_search(
         self,
-        search_parameters: Optional[dict[str, int]],
+        search_parameters: dict[str, int] | None,
         query_vectors: DatasetDescriptor,
         k: int,
     ):
@@ -302,9 +304,9 @@ class IndexBase:
 
     def range_search(
         self,
-        search_parameters: Optional[dict[str, int]],
+        search_parameters: dict[str, int] | None,
         query_vectors: DatasetDescriptor,
-        radius: Optional[float] = None,
+        radius: float | None = None,
     ):
         logger.info("range_search: begin")
         filename = self.get_range_search_name(search_parameters, query_vectors, radius) + "zip"
@@ -510,9 +512,9 @@ class Index(IndexBase):
 
     def get_range_search_name(
         self,
-        search_parameters: Optional[dict[str, int]],
+        search_parameters: dict[str, int] | None,
         query_vectors: DatasetDescriptor,
-        radius: Optional[float] = None,
+        radius: float | None = None,
     ):
         name = self.get_index_name()
         name += Index.param_dict_to_name(search_parameters)
@@ -529,7 +531,7 @@ class Index(IndexBase):
 @dataclass
 class IndexFromCodec(Index):
     path: str
-    bucket: Optional[str] = None
+    bucket: str | None = None
 
     def get_quantizer(self):
         if not self.is_ivf():

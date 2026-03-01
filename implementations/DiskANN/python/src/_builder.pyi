@@ -1,7 +1,7 @@
 # Copyright (c) Microsoft Corporation. All rights reserved.
 # Licensed under the MIT license.
 
-from typing import BinaryIO, Optional, overload
+from typing import BinaryIO, overload
 
 import numpy as np
 
@@ -50,7 +50,7 @@ def build_memory_index(
     label_file: str,
     universal_label: str,
     filter_complexity: int,
-    tags: Optional[VectorIdentifierBatch],
+    tags: VectorIdentifierBatch | None,
     index_prefix: str,
 ): ...
 @overload
@@ -69,6 +69,6 @@ def build_memory_index(
     label_file: str,
     universal_label: str,
     filter_complexity: int,
-    tags: Optional[str],
+    tags: str | None,
     index_prefix: str,
 ): ...

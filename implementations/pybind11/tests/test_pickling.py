@@ -1,8 +1,9 @@
 import pickle
 import re
 
-import env
 import pytest
+
+import env
 from pybind11_tests import pickling as m
 
 

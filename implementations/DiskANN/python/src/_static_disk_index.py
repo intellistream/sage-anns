@@ -3,7 +3,6 @@
 
 import os
 import warnings
-from typing import Optional
 
 import numpy as np
 
@@ -35,9 +34,9 @@ class StaticDiskIndex:
         num_threads: int,
         num_nodes_to_cache: int,
         cache_mechanism: int = 1,
-        distance_metric: Optional[DistanceMetric] = None,
-        vector_dtype: Optional[VectorDType] = None,
-        dimensions: Optional[int] = None,
+        distance_metric: DistanceMetric | None = None,
+        vector_dtype: VectorDType | None = None,
+        dimensions: int | None = None,
         index_prefix: str = "ann",
     ):
         """

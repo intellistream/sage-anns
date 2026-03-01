@@ -14,7 +14,6 @@ import os
 import re
 import shutil
 import sys
-from typing import Optional
 
 INCLUDED_SUBDIRS = ["common", "compress", "decompress"]
 
@@ -57,7 +56,7 @@ class PartialPreprocessor:
     Does not handle multi-line macros (only looks in first line).
     """
 
-    def __init__(self, defs: [(str, Optional[str])], replaces: [(str, str)], undefs: [str]):
+    def __init__(self, defs: [(str, str | None)], replaces: [(str, str)], undefs: [str]):
         MACRO_GROUP = r"(?P<macro>[a-zA-Z_][a-zA-Z_0-9]*)"
         ELIF_GROUP = r"(?P<elif>el)?"
         OP_GROUP = r"(?P<op>&&|\|\|)?"
@@ -425,10 +424,10 @@ class Freestanding:
         source_lib: str,
         output_lib: str,
         external_xxhash: bool,
-        xxh64_state: Optional[str],
-        xxh64_prefix: Optional[str],
+        xxh64_state: str | None,
+        xxh64_prefix: str | None,
         rewritten_includes: [(str, str)],
-        defs: [(str, Optional[str])],
+        defs: [(str, str | None)],
         replaces: [(str, str)],
         undefs: [str],
         excludes: [str],
@@ -506,7 +505,7 @@ class Freestanding:
         self._log(f"Copying mem: {self._mem} -> {dst_mem}")
         shutil.copyfile(self._mem, dst_mem)
 
-    def _hardwire_preprocessor(self, name: str, value: Optional[str] = None, undef=False):
+    def _hardwire_preprocessor(self, name: str, value: str | None = None, undef=False):
         """
         If value=None then hardwire that it is defined, but not what the value is.
         If undef=True then value must be None.
@@ -676,7 +675,7 @@ class Freestanding:
         self._process_spdx()
 
 
-def parse_optional_pair(defines: [str]) -> [(str, Optional[str])]:
+def parse_optional_pair(defines: [str]) -> [(str, str | None)]:
     output = []
     for define in defines:
         parsed = define.split("=")

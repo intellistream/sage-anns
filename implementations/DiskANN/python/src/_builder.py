@@ -4,7 +4,7 @@
 import os
 import shutil
 from pathlib import Path
-from typing import BinaryIO, Optional, Union
+from typing import BinaryIO
 
 import numpy as np
 
@@ -55,7 +55,7 @@ def numpy_to_diskann_file(vectors: VectorLikeBatch, dtype: VectorDType, file_han
 
 
 def _valid_path_and_dtype(
-    data: Union[str, VectorLikeBatch], vector_dtype: VectorDType, index_path: str
+    data: str | VectorLikeBatch, vector_dtype: VectorDType, index_path: str
 ) -> tuple[str, VectorDType]:
     if isinstance(data, str):
         vector_bin_path = data
@@ -76,7 +76,7 @@ def _valid_path_and_dtype(
 
 
 def build_disk_index(
-    data: Union[str, VectorLikeBatch],
+    data: str | VectorLikeBatch,
     distance_metric: DistanceMetric,
     index_directory: str,
     complexity: int,
@@ -85,7 +85,7 @@ def build_disk_index(
     build_memory_maximum: float,
     num_threads: int,
     pq_disk_bytes: int = defaults.PQ_DISK_BYTES,
-    vector_dtype: Optional[VectorDType] = None,
+    vector_dtype: VectorDType | None = None,
     index_prefix: str = "ann",
 ):
     """
@@ -185,7 +185,7 @@ def build_disk_index(
 
 
 def build_memory_index(
-    data: Union[str, VectorLikeBatch],
+    data: str | VectorLikeBatch,
     distance_metric: DistanceMetric,
     index_directory: str,
     complexity: int,
@@ -195,9 +195,9 @@ def build_memory_index(
     use_pq_build: bool = defaults.USE_PQ_BUILD,
     num_pq_bytes: int = defaults.NUM_PQ_BYTES,
     use_opq: bool = defaults.USE_OPQ,
-    vector_dtype: Optional[VectorDType] = None,
+    vector_dtype: VectorDType | None = None,
     filter_complexity: int = defaults.FILTER_COMPLEXITY,
-    tags: Union[str, VectorIdentifierBatch] = "",
+    tags: str | VectorIdentifierBatch = "",
     index_prefix: str = "ann",
 ):
     """

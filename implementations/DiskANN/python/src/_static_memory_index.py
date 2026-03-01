@@ -3,7 +3,6 @@
 
 import os
 import warnings
-from typing import Optional
 
 import numpy as np
 
@@ -34,9 +33,9 @@ class StaticMemoryIndex:
         num_threads: int,
         initial_search_complexity: int,
         index_prefix: str = "ann",
-        distance_metric: Optional[DistanceMetric] = None,
-        vector_dtype: Optional[VectorDType] = None,
-        dimensions: Optional[int] = None,
+        distance_metric: DistanceMetric | None = None,
+        vector_dtype: VectorDType | None = None,
+        dimensions: int | None = None,
     ):
         """
         The diskannpy.StaticMemoryIndex represents our python API into a static DiskANN InMemory Index library.

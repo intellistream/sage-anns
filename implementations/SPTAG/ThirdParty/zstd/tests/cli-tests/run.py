@@ -18,7 +18,6 @@ import shutil
 import subprocess
 import sys
 import tempfile
-import typing
 
 ZSTD_SYMLINKS = [
     "zstd",
@@ -104,7 +103,7 @@ def diff(a: bytes, b: bytes) -> str:
             return diff_bytes.decode("utf8")
 
 
-def pop_line(data: bytes) -> tuple[typing.Optional[bytes], bytes]:
+def pop_line(data: bytes) -> tuple[bytes | None, bytes]:
     """
     Pop the first line from :data: and returns the first line and the remainder
     of the data as a tuple. If :data: is empty, returns :(None, data):. Otherwise
@@ -199,7 +198,7 @@ class Options:
     def __init__(
         self,
         env: dict[str, str],
-        timeout: typing.Optional[int],
+        timeout: int | None,
         verbose: bool,
         preserve: bool,
         scratch_dir: str,

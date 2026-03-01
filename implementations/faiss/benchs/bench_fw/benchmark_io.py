@@ -10,7 +10,7 @@ import logging
 import os
 import pickle
 from dataclasses import dataclass
-from typing import Any, Optional
+from typing import Any
 from zipfile import ZipFile
 
 import faiss  # @manual=//faiss/python:pyfaiss_gpu
@@ -57,16 +57,16 @@ class BenchmarkIO:
     def download_file_from_blobstore(
         self,
         filename: str,
-        bucket: Optional[str] = None,
-        path: Optional[str] = None,
+        bucket: str | None = None,
+        path: str | None = None,
     ):
         return self.get_local_filename(filename)
 
     def upload_file_to_blobstore(
         self,
         filename: str,
-        bucket: Optional[str] = None,
-        path: Optional[str] = None,
+        bucket: str | None = None,
+        path: str | None = None,
         overwrite: bool = False,
     ):
         pass
@@ -153,7 +153,7 @@ class BenchmarkIO:
     def read_nparray(
         self,
         filename: str,
-        mmap_mode: Optional[str] = None,
+        mmap_mode: str | None = None,
     ):
         fn = self.download_file_from_blobstore(filename)
         logger.info(f"Loading nparray from {fn}")
@@ -197,8 +197,8 @@ class BenchmarkIO:
     def read_index(
         self,
         filename: str,
-        bucket: Optional[str] = None,
-        path: Optional[str] = None,
+        bucket: str | None = None,
+        path: str | None = None,
     ):
         fn = self.download_file_from_blobstore(filename, bucket, path)
         logger.info(f"Loading index {fn}")

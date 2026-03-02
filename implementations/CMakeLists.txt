@@ -25,6 +25,7 @@ set(CANDY_DIR ${ALGORITHMS_IMPL_DIR}/candy)
 # 并确保已安装 Intel oneAPI MKL 或 conda install mkl-devel。
 option(ENABLE_DISKANN "Build DiskANN backend (requires Intel MKL dev package and libaio)" OFF)
 option(ENABLE_PUCK "Build Puck backend (requires Intel MKL)" OFF)
+option(ENABLE_SPTAG "Build SPTAG backend (requires Boost system/thread/serialization/filesystem)" OFF)
 if(ENABLE_DISKANN)
     message(STATUS "DiskANN: ENABLED (Intel MKL required)")
 else()
@@ -34,6 +35,11 @@ if(ENABLE_PUCK)
     message(STATUS "Puck: ENABLED (Intel MKL required)")
 else()
     message(STATUS "Puck: DISABLED (set -DENABLE_PUCK=ON to enable, requires Intel MKL)")
+endif()
+if(ENABLE_SPTAG)
+    message(STATUS "SPTAG: ENABLED (Boost >= 1.67 required)")
+else()
+    message(STATUS "SPTAG: DISABLED (set -DENABLE_SPTAG=ON to enable, requires Boost >= 1.67)")
 endif()
 
 # ========================================
@@ -183,10 +189,12 @@ elseif(EXISTS ${PUCK_DIR}/CMakeLists.txt)
     message(STATUS "Skipping Puck (ENABLE_PUCK=OFF)")
 endif()
 
-# 编译 SPTAG (如果有 CMakeLists.txt)
-if(EXISTS ${SPTAG_DIR}/CMakeLists.txt)
+# 编译 SPTAG (可选，需要 Boost)
+if(ENABLE_SPTAG AND EXISTS ${SPTAG_DIR}/CMakeLists.txt)
     message(STATUS "Building SPTAG...")
     add_subdirectory(${SPTAG_DIR} sptag_build)
+elseif(EXISTS ${SPTAG_DIR}/CMakeLists.txt)
+    message(STATUS "Skipping SPTAG (ENABLE_SPTAG=OFF)")
 endif()
 
 # 添加 pybind11
@@ -248,7 +256,18 @@ endif()
 list(APPEND PYCANDY_LIBS ${TORCH_LIBRARIES})
 
 # 第三组：基础系统库
-list(APPEND PYCANDY_LIBS gflags pthread dl m)
+list(APPEND PYCANDY_LIBS pthread dl m)
+
+# 可选: gflags
+if(gflags_FOUND)
+    if(TARGET gflags::gflags)
+        list(APPEND PYCANDY_LIBS gflags::gflags)
+    else()
+        list(APPEND PYCANDY_LIBS gflags)
+    endif()
+else()
+    message(STATUS "Skipping gflags linkage (gflags not found)")
+endif()
 
 # 可选: torch_python
 if(TORCH_PYTHON_LIBRARY)
@@ -305,11 +324,15 @@ else()
     message(STATUS "Skipping libaio and diskann_s (ENABLE_DISKANN=OFF)")
 endif()
 
-# 必需: SPTAG
-if(TARGET SPTAGLibStatic)
-    list(APPEND PYCANDY_LIBS SPTAGLibStatic)
+# SPTAG (仅在 ENABLE_SPTAG=ON 时需要)
+if(ENABLE_SPTAG)
+    if(TARGET SPTAGLibStatic)
+        list(APPEND PYCANDY_LIBS SPTAGLibStatic)
+    else()
+        message(FATAL_ERROR "SPTAGLibStatic target not found - SPTAG build failed")
+    endif()
 else()
-    message(FATAL_ERROR "SPTAGLibStatic target not found - SPTAG build failed")
+    message(STATUS "Skipping SPTAG linkage (ENABLE_SPTAG=OFF)")
 endif()
 
 # Puck (仅在 ENABLE_PUCK=ON 时需要)

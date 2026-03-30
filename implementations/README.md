@@ -218,7 +218,7 @@ I, D = wrapper.query(queries, k=10)
 ```python
 from benchmark_anns.bench import get_algorithm
 
-algo = get_algorithm("candy_hnsw")  # 自动从 registry 加载
+algo = get_algorithm("candy_flat")  # 自动从 registry 加载
 algo = get_algorithm("faiss_hnsw")
 algo = get_algorithm("diskann")
 ```

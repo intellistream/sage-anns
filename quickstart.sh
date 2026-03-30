@@ -64,12 +64,62 @@ else
     echo -e "${YELLOW}⚠  pre-push template not found, skipping${NC}"
 fi
 
+# Install post-commit hook (auto-bump version)
+if [ -f "$TEMPLATE_DIR/post-commit" ]; then
+    cp "$TEMPLATE_DIR/post-commit" "$HOOKS_DIR/post-commit"
+    chmod +x "$HOOKS_DIR/post-commit"
+    echo -e "${GREEN}✓ Installed post-commit hook${NC}"
+fi
+
 echo ""
 
-# Step 2: Check dependencies
+# Step 2: Check and install system dependencies
 echo -e "${CYAN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
-echo -e "${YELLOW}${BOLD}Step 2: Checking Dependencies${NC}"
+echo -e "${YELLOW}${BOLD}Step 2: Checking System Dependencies${NC}"
 echo -e "${CYAN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+
+# --- Auto-install missing apt packages (Linux only) ---
+if [[ "$(uname)" == "Linux" ]] && command -v apt-get &> /dev/null; then
+    # C++ build dependencies required by sage-anns implementations:
+    #   cmake, g++/build-essential   - basic C++ toolchain
+    #   libboost-dev                 - required by DiskANN, SPTAG
+    #   libboost-program-options-dev - required by DiskANN CLI
+    #   libgflags-dev                - required by DiskANN
+    #   libgoogle-glog-dev           - required by SPTAG/DiskANN logging linkage
+    #   pkg-config                   - helps CMake locate glog/gflags metadata
+    #   ninja-build                  - faster and more stable CMake backend
+    #   libopenblas-dev              - BLAS backend for FAISS, Puck
+    #   liblapack-dev                - LAPACK (pairs with OpenBLAS)
+    APT_DEPS=(
+        cmake
+        build-essential
+        libboost-dev
+        libboost-program-options-dev
+        libgflags-dev
+        libgoogle-glog-dev
+        pkg-config
+        ninja-build
+        libopenblas-dev
+        liblapack-dev
+    )
+
+    MISSING_APT=()
+    for pkg in "${APT_DEPS[@]}"; do
+        if ! dpkg -s "$pkg" &>/dev/null; then
+            MISSING_APT+=("$pkg")
+        fi
+    done
+
+    if [[ ${#MISSING_APT[@]} -gt 0 ]]; then
+        echo -e "${YELLOW}⚠  Missing apt packages: ${MISSING_APT[*]}${NC}"
+        echo -e "${BLUE}Installing missing C++ build dependencies via apt...${NC}"
+        sudo apt-get update -qq
+        sudo apt-get install -y "${MISSING_APT[@]}"
+        echo -e "${GREEN}✓ apt dependencies installed${NC}"
+    else
+        echo -e "${GREEN}✓ All apt C++ build dependencies present${NC}"
+    fi
+fi
 
 # Check for CMake
 if command -v cmake &> /dev/null; then
@@ -166,7 +216,7 @@ read -r INSTALL_PY
 if [[ "$INSTALL_PY" =~ ^[Yy]$ ]]; then
     echo -e "${YELLOW}Installing in editable mode...${NC}"
     cd "$PROJECT_ROOT"
-    pip install -e .
+    python3 -m pip install -e .
     echo -e "${GREEN}✓ Python package installed${NC}"
 else
     echo -e "${YELLOW}Skipping Python package install${NC}"

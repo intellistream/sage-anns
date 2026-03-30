@@ -1,4 +1,5 @@
 import pytest
+
 from pybind11_tests import vector_unique_ptr_member as m
 
 

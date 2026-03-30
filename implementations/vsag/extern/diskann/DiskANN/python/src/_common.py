@@ -5,7 +5,6 @@ import os
 import warnings
 from enum import Enum
 from pathlib import Path
-from typing import Literal, NamedTuple, Optional, Tuple, Type, Union
 
 import numpy as np
 
@@ -23,7 +22,7 @@ __ALL__ = ["valid_dtype"]
 _VALID_DTYPES = [np.float32, np.int8, np.uint8]
 
 
-def valid_dtype(dtype: Type) -> VectorDType:
+def valid_dtype(dtype: type) -> VectorDType:
     """
     Utility method to determine whether the provided dtype is supported by `diskannpy`, and if so, the canonical
     dtype we will use internally (e.g. np.single -> np.float32)
@@ -55,22 +54,20 @@ def _valid_metric(metric: str) -> _native_dap.Metric:
         raise ValueError("distance_metric must be one of 'l2', 'mips', or 'cosine'")
 
 
-def _assert_dtype(dtype: Type):
+def _assert_dtype(dtype: type):
     _assert(
         any(np.can_cast(dtype, _dtype) for _dtype in _VALID_DTYPES),
-        f"Vector dtype must be of one of type {{(np.single, np.float32), (np.byte, np.int8), (np.ubyte, np.uint8)}}",
+        "Vector dtype must be of one of type {(np.single, np.float32), (np.byte, np.int8), (np.ubyte, np.uint8)}",
     )
 
 
 def _castable_dtype_or_raise(
-    data: Union[VectorLike, VectorLikeBatch, VectorIdentifierBatch], expected: np.dtype
+    data: VectorLike | VectorLikeBatch | VectorIdentifierBatch, expected: np.dtype
 ) -> np.ndarray:
     if isinstance(data, np.ndarray) and np.can_cast(data.dtype, expected):
         return data.astype(expected, casting="safe")
     else:
-        raise TypeError(
-            f"expecting a numpy ndarray of dtype {expected}, not a {type(data)}"
-        )
+        raise TypeError(f"expecting a numpy ndarray of dtype {expected}, not a {type(data)}")
 
 
 def _assert_2d(vectors: np.ndarray, name: str):
@@ -103,9 +100,7 @@ def _assert_is_nonnegative_uint64(test_value: int, parameter: str):
 
 def _assert_existing_directory(path: str, parameter: str):
     _path = Path(path)
-    _assert(
-        _path.exists() and _path.is_dir(), f"{parameter} must be an existing directory"
-    )
+    _assert(_path.exists() and _path.is_dir(), f"{parameter} must be an existing directory")
 
 
 def _assert_existing_file(path: str, parameter: str):
@@ -191,7 +186,7 @@ def _write_index_metadata(
 
 def _read_index_metadata(
     index_path_and_prefix: str,
-) -> Optional[Tuple[VectorDType, str, np.uint64, np.uint64]]:
+) -> tuple[VectorDType, str, np.uint64, np.uint64] | None:
     path = _build_metadata_path(index_path_and_prefix)
     if not Path(path).exists():
         return None
@@ -207,11 +202,11 @@ def _read_index_metadata(
 
 def _ensure_index_metadata(
     index_path_and_prefix: str,
-    vector_dtype: Optional[VectorDType],
-    distance_metric: Optional[DistanceMetric],
+    vector_dtype: VectorDType | None,
+    distance_metric: DistanceMetric | None,
     max_vectors: int,
-    dimensions: Optional[int],
-) -> Tuple[VectorDType, str, np.uint64, np.uint64]:
+    dimensions: int | None,
+) -> tuple[VectorDType, str, np.uint64, np.uint64]:
     possible_metadata = _read_index_metadata(index_path_and_prefix)
     if possible_metadata is None:
         _assert(

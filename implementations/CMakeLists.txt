@@ -18,6 +18,31 @@ set(PYBIND11_DIR ${ALGORITHMS_IMPL_DIR}/pybind11)
 set(CANDY_DIR ${ALGORITHMS_IMPL_DIR}/candy)
 
 # ========================================
+# 可选功能开关
+# ========================================
+# DiskANN 需要 Intel MKL (含静态库和头文件) + libaio。
+# 普通构建/发布默认关闭。如需启用，传入 -DENABLE_DISKANN=ON
+# 并确保已安装 Intel oneAPI MKL 或 conda install mkl-devel。
+option(ENABLE_DISKANN "Build DiskANN backend (requires Intel MKL dev package and libaio)" OFF)
+option(ENABLE_PUCK "Build Puck backend (requires Intel MKL)" OFF)
+option(ENABLE_SPTAG "Build SPTAG backend (requires Boost system/thread/serialization/filesystem)" OFF)
+if(ENABLE_DISKANN)
+    message(STATUS "DiskANN: ENABLED (Intel MKL required)")
+else()
+    message(STATUS "DiskANN: DISABLED (set -DENABLE_DISKANN=ON to enable, requires Intel MKL)")
+endif()
+if(ENABLE_PUCK)
+    message(STATUS "Puck: ENABLED (Intel MKL required)")
+else()
+    message(STATUS "Puck: DISABLED (set -DENABLE_PUCK=ON to enable, requires Intel MKL)")
+endif()
+if(ENABLE_SPTAG)
+    message(STATUS "SPTAG: ENABLED (Boost >= 1.67 required)")
+else()
+    message(STATUS "SPTAG: DISABLED (set -DENABLE_SPTAG=ON to enable, requires Boost >= 1.67)")
+endif()
+
+# ========================================
 # 禁用CUDA支持 (CPU-only build)
 # ========================================
 set(CMAKE_DISABLE_FIND_PACKAGE_CUDA TRUE)
@@ -147,21 +172,29 @@ add_subdirectory(${FAISS_DIR} faiss_build)
 # Faiss target 将直接在链接时使用
 message(STATUS "Faiss library target: faiss")
 
-# 编译 DiskANN
-message(STATUS "Building DiskANN...")
-set(DISKANN_BUILD_PYTHON ON CACHE BOOL "Build DiskANN Python bindings")
-add_subdirectory(${DISKANN_DIR} diskann_build)
-
-# 编译 Puck (如果有 CMakeLists.txt)
-if(EXISTS ${PUCK_DIR}/CMakeLists.txt)
-    message(STATUS "Building Puck...")
-    add_subdirectory(${PUCK_DIR} puck_build)
+# 编译 DiskANN (可选，需要 Intel MKL)
+if(ENABLE_DISKANN)
+    message(STATUS "Building DiskANN...")
+    set(DISKANN_BUILD_PYTHON ON CACHE BOOL "Build DiskANN Python bindings")
+    add_subdirectory(${DISKANN_DIR} diskann_build)
+else()
+    message(STATUS "Skipping DiskANN (ENABLE_DISKANN=OFF)")
 endif()
 
-# 编译 SPTAG (如果有 CMakeLists.txt)
-if(EXISTS ${SPTAG_DIR}/CMakeLists.txt)
+# 编译 Puck (可选，需要 Intel MKL)
+if(ENABLE_PUCK AND EXISTS ${PUCK_DIR}/CMakeLists.txt)
+    message(STATUS "Building Puck...")
+    add_subdirectory(${PUCK_DIR} puck_build)
+elseif(EXISTS ${PUCK_DIR}/CMakeLists.txt)
+    message(STATUS "Skipping Puck (ENABLE_PUCK=OFF)")
+endif()
+
+# 编译 SPTAG (可选，需要 Boost)
+if(ENABLE_SPTAG AND EXISTS ${SPTAG_DIR}/CMakeLists.txt)
     message(STATUS "Building SPTAG...")
     add_subdirectory(${SPTAG_DIR} sptag_build)
+elseif(EXISTS ${SPTAG_DIR}/CMakeLists.txt)
+    message(STATUS "Skipping SPTAG (ENABLE_SPTAG=OFF)")
 endif()
 
 # 添加 pybind11
@@ -223,7 +256,18 @@ endif()
 list(APPEND PYCANDY_LIBS ${TORCH_LIBRARIES})
 
 # 第三组：基础系统库
-list(APPEND PYCANDY_LIBS gflags pthread dl m)
+list(APPEND PYCANDY_LIBS pthread dl m)
+
+# 可选: gflags
+if(gflags_FOUND)
+    if(TARGET gflags::gflags)
+        list(APPEND PYCANDY_LIBS gflags::gflags)
+    else()
+        list(APPEND PYCANDY_LIBS gflags)
+    endif()
+else()
+    message(STATUS "Skipping gflags linkage (gflags not found)")
+endif()
 
 # 可选: torch_python
 if(TORCH_PYTHON_LIBRARY)
@@ -262,33 +306,44 @@ else()
     endif()
 endif()
 
-# 必需: libaio (DiskANN 需要)
-find_library(AIO_LIB aio REQUIRED)
-if(NOT AIO_LIB)
-    message(FATAL_ERROR "libaio not found - install libaio-dev or libaio-devel")
-endif()
-list(APPEND PYCANDY_LIBS ${AIO_LIB})
-message(STATUS "Found libaio: ${AIO_LIB}")
+# libaio 和 DiskANN (仅在 ENABLE_DISKANN=ON 时需要)
+if(ENABLE_DISKANN)
+    find_library(AIO_LIB aio)
+    if(NOT AIO_LIB)
+        message(FATAL_ERROR "libaio not found - install libaio-dev or libaio-devel")
+    endif()
+    list(APPEND PYCANDY_LIBS ${AIO_LIB})
+    message(STATUS "Found libaio: ${AIO_LIB}")
 
-# 必需: DiskANN (依赖 glog)
-if(TARGET diskann_s)
-    list(APPEND PYCANDY_LIBS diskann_s)
+    if(TARGET diskann_s)
+        list(APPEND PYCANDY_LIBS diskann_s)
+    else()
+        message(FATAL_ERROR "diskann_s target not found - DiskANN build failed")
+    endif()
 else()
-    message(FATAL_ERROR "diskann_s target not found - DiskANN build failed")
-endif()
-
-# 必需: SPTAG
-if(TARGET SPTAGLibStatic)
-    list(APPEND PYCANDY_LIBS SPTAGLibStatic)
-else()
-    message(FATAL_ERROR "SPTAGLibStatic target not found - SPTAG build failed")
+    message(STATUS "Skipping libaio and diskann_s (ENABLE_DISKANN=OFF)")
 endif()
 
-# 必需: Puck
-if(TARGET puck)
-    list(APPEND PYCANDY_LIBS puck)
+# SPTAG (仅在 ENABLE_SPTAG=ON 时需要)
+if(ENABLE_SPTAG)
+    if(TARGET SPTAGLibStatic)
+        list(APPEND PYCANDY_LIBS SPTAGLibStatic)
+    else()
+        message(FATAL_ERROR "SPTAGLibStatic target not found - SPTAG build failed")
+    endif()
 else()
-    message(FATAL_ERROR "puck target not found - Puck build failed")
+    message(STATUS "Skipping SPTAG linkage (ENABLE_SPTAG=OFF)")
+endif()
+
+# Puck (仅在 ENABLE_PUCK=ON 时需要)
+if(ENABLE_PUCK)
+    if(TARGET puck)
+        list(APPEND PYCANDY_LIBS puck)
+    else()
+        message(FATAL_ERROR "puck target not found - Puck build failed")
+    endif()
+else()
+    message(STATUS "Skipping puck linkage (ENABLE_PUCK=OFF)")
 endif()
 
 # MKL 库（Puck 依赖）- 使用 find_package 或直接查找
@@ -416,6 +471,11 @@ set_target_properties(PyCANDYAlgo PROPERTIES
 # 确保 PyInit_PyCANDYAlgo 符号被导出
 target_compile_options(PyCANDYAlgo PRIVATE
     -fvisibility=default
+)
+
+# 强制使用旧 ABI，和 GTI/n2 以及现有预编译依赖保持一致，避免链接/加载不兼容
+target_compile_definitions(PyCANDYAlgo PRIVATE
+    _GLIBCXX_USE_CXX11_ABI=0
 )
 
 # 添加链接选项，确保符号正确导出

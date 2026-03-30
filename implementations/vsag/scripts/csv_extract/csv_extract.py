@@ -14,30 +14,34 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
-import os
-import csv
-import h5py
-import numpy as np
-import subprocess
 import argparse
+import csv
+import os
 import pickle
+import subprocess
 from pprint import pprint
 
-def extract_from_csv(csvfile,
-                     id_column_name,
-                     vector_column_name,
-                     output_hdf5,
-                     dataset_name,
-                     overwrite,
-                     id_callback=lambda *args: None,
-                     vector_callback=lambda *args: None):
-    with h5py.File(output_hdf5, 'a') as hdf5file:
+import h5py
+import numpy as np
+
+
+def extract_from_csv(
+    csvfile,
+    id_column_name,
+    vector_column_name,
+    output_hdf5,
+    dataset_name,
+    overwrite,
+    id_callback=lambda *args: None,
+    vector_callback=lambda *args: None,
+):
+    with h5py.File(output_hdf5, "a") as hdf5file:
         data = list()
-        csvfiles = [f for f in csvfile.split(":") if f != '']
+        csvfiles = [f for f in csvfile.split(":") if f != ""]
         for i in range(len(csvfiles)):
             csvfile = csvfiles[i]
-            line_count = int(subprocess.check_output(f'wc -l {csvfile}', shell=True).split()[0]) - 1
-            with open(csvfile, 'r') as basefile:
+            line_count = int(subprocess.check_output(f"wc -l {csvfile}", shell=True).split()[0]) - 1
+            with open(csvfile) as basefile:
                 reader = csv.reader(basefile)
                 header = next(reader)
                 id_column_idx = header.index(id_column_name)
@@ -48,13 +52,16 @@ def extract_from_csv(csvfile,
                     id = row[id_column_idx]
                     id_callback(lineno, id)
                     # vector = [int(val) for val in row[vector_column_idx].split(',')]
-                    vector = np.fromstring(row[vector_column_idx], dtype=np.int8, sep=',')
+                    vector = np.fromstring(row[vector_column_idx], dtype=np.int8, sep=",")
                     vector_callback(lineno, vector)
                     data.append(vector)
 
                     lineno += 1
                     if lineno % (line_count // 100) == 0:
-                        print(f"\r{dataset_name} parsing ... {lineno / (line_count // 100)}% [{i+1}/{len(csvfiles)}]", end="")
+                        print(
+                            f"\r{dataset_name} parsing ... {lineno / (line_count // 100)}% [{i + 1}/{len(csvfiles)}]",
+                            end="",
+                        )
                 print()
 
         print("converting ...")
@@ -68,20 +75,32 @@ def extract_from_csv(csvfile,
                 exit(-1)
         hdf5file.create_dataset(dataset_name, data.shape, data=data)
 
-def extract(base_csv, base_id_column_name, base_vector_column_name,
-            query_csv, query_id_column_name, query_vector_column_name,
-            output_hdf5, overwrite):
+
+def extract(
+    base_csv,
+    base_id_column_name,
+    base_vector_column_name,
+    query_csv,
+    query_id_column_name,
+    query_vector_column_name,
+    output_hdf5,
+    overwrite,
+):
     print("Step #1: extract base data")
     idmap = dict()
+
     def proc1(lineno, id):
         idmap[id] = lineno
-    extract_from_csv(base_csv,
-                     base_id_column_name,
-                     base_vector_column_name,
-                     output_hdf5,
-                     "base",
-                     overwrite,
-                     id_callback=proc1)
+
+    extract_from_csv(
+        base_csv,
+        base_id_column_name,
+        base_vector_column_name,
+        output_hdf5,
+        "base",
+        overwrite,
+        id_callback=proc1,
+    )
     # with h5py.File(output_hdf5, 'r') as hdf5file:
     #     base = np.array(hdf5file["base"])
     #     bf_index = hnswlib.BFIndex(space='l2', dim=base.shape[1])
@@ -91,19 +110,23 @@ def extract(base_csv, base_id_column_name, base_vector_column_name,
     print("Step #2: extract query data")
     groundtruth = list()
     failed_list = list()
+
     def proc2(lineno, id):
         if id not in idmap:
             failed_list.append(id)
             groundtruth.append([-1])
         else:
             groundtruth.append([idmap[id]])
-    extract_from_csv(query_csv,
-                     query_id_column_name,
-                     query_vector_column_name,
-                     output_hdf5,
-                     "query",
-                     overwrite,
-                     id_callback=proc2)
+
+    extract_from_csv(
+        query_csv,
+        query_id_column_name,
+        query_vector_column_name,
+        output_hdf5,
+        "query",
+        overwrite,
+        id_callback=proc2,
+    )
     if len(failed_list):
         pprint({"failed list": failed_list})
     groundtruth = np.array(groundtruth)
@@ -117,25 +140,26 @@ def extract(base_csv, base_id_column_name, base_vector_column_name,
     # print(groundtruth.shape)
 
     # Save groundtruth and idmap
-    with h5py.File(output_hdf5, 'a') as hdf5file:
-        if 'groundtruth' in hdf5file.keys():
+    with h5py.File(output_hdf5, "a") as hdf5file:
+        if "groundtruth" in hdf5file.keys():
             if overwrite:
-                del hdf5file['groundtruth']
+                del hdf5file["groundtruth"]
             else:
                 print(f"error: groundtruth exists in {output_hdf5}, overwrite is NOT allow")
                 exit(-1)
-        hdf5file.create_dataset('groundtruth', groundtruth.shape, data=groundtruth)
+        hdf5file.create_dataset("groundtruth", groundtruth.shape, data=groundtruth)
     idmap_filename = os.path.splitext(output_hdf5)[0] + ".idmap"
-    with open(idmap_filename, 'wb') as f:
+    with open(idmap_filename, "wb") as f:
         pickle.dump(idmap, f)
+
 
 def interactive():
     # input of base dataset
     base_csv = ""
     while not os.path.isfile(base_csv):
         base_csv = input("1. base csv filename: ")
-    base_line_count = int(subprocess.check_output(f'wc -l {base_csv}', shell=True).split()[0]) - 1
-    with open(base_csv, 'r') as csvfile:
+    base_line_count = int(subprocess.check_output(f"wc -l {base_csv}", shell=True).split()[0]) - 1
+    with open(base_csv) as csvfile:
         reader = csv.reader(csvfile)
         header = next(reader)
         print(header, "\n")
@@ -154,8 +178,8 @@ def interactive():
     query_csv = ""
     while not os.path.isfile(query_csv):
         query_csv = input("2. query csv filename: ")
-    query_line_count = int(subprocess.check_output(f'wc -l {query_csv}', shell=True).split()[0]) - 1
-    with open(query_csv, 'r') as csvfile:
+    query_line_count = int(subprocess.check_output(f"wc -l {query_csv}", shell=True).split()[0]) - 1
+    with open(query_csv) as csvfile:
         reader = csv.reader(csvfile)
         header = next(reader)
         print(header, "\n")
@@ -180,7 +204,9 @@ def interactive():
             overwrite = input(f"{output_hdf5} file existed, overwrite? [y/N]")
             overwrite = overwrite.upper() == "Y"
             if overwrite == "Y":
-                print(f"output data would overwrite the base and query dataset in the output hdf5 file")
+                print(
+                    "output data would overwrite the base and query dataset in the output hdf5 file"
+                )
 
     plan_message = f"""
 Extract Plan:
@@ -197,47 +223,61 @@ Extract Plan:
 """
     print(plan_message)
 
-    extract(base_csv,
-            base_id_column_name,
-            base_vector_column_name,
-            query_csv,
-            query_id_column_name,
-            query_vector_column_name,
-            output_hdf5,
-            overwrite)
+    extract(
+        base_csv,
+        base_id_column_name,
+        base_vector_column_name,
+        query_csv,
+        query_id_column_name,
+        query_vector_column_name,
+        output_hdf5,
+        overwrite,
+    )
 
 
-call_from_cmd_example = '''
+call_from_cmd_example = """
 python3 csv_extract.py --base-csv /path/to/base.csv \\
 	--base-id-name id --base-vector-name feature \\
 	--query-csv /path/to/query.csv \\
 	--query-id-name id --query-vector-name feature \\
 	--output /path/to/output.h5 --overwrite
-'''
-    
+"""
+
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description='Extract vector dataset from csv')
-    parser.add_argument('--example', action='store_true', help='print example commands')
-    parser.add_argument('--base-csv', type=str, help='base csv filename')
-    parser.add_argument('--base-id-name', type=str, help='id column name in base csv')
-    parser.add_argument('--base-vector-name', type=str, help='vector column name in base csv')
-    parser.add_argument('--query-csv', type=str, help='query csv filename')
-    parser.add_argument('--query-id-name', type=str, help='id column name in base csv')
-    parser.add_argument('--query-vector-name', type=str, help='vector column name in base csv')
-    parser.add_argument('--output', type=str, help='output hdf5 filename')
-    parser.add_argument('--overwrite', action='store_true', help='overwrite if output file exist')
+    parser = argparse.ArgumentParser(description="Extract vector dataset from csv")
+    parser.add_argument("--example", action="store_true", help="print example commands")
+    parser.add_argument("--base-csv", type=str, help="base csv filename")
+    parser.add_argument("--base-id-name", type=str, help="id column name in base csv")
+    parser.add_argument("--base-vector-name", type=str, help="vector column name in base csv")
+    parser.add_argument("--query-csv", type=str, help="query csv filename")
+    parser.add_argument("--query-id-name", type=str, help="id column name in base csv")
+    parser.add_argument("--query-vector-name", type=str, help="vector column name in base csv")
+    parser.add_argument("--output", type=str, help="output hdf5 filename")
+    parser.add_argument("--overwrite", action="store_true", help="overwrite if output file exist")
     args = parser.parse_args()
 
     if args.example:
         print(call_from_cmd_example)
         exit(0)
 
-    if None in [args.base_csv, args.base_id_name, args.base_vector_name,
-                args.query_csv, args.query_id_name, args.query_vector_name,
-                args.output]:
+    if None in [
+        args.base_csv,
+        args.base_id_name,
+        args.base_vector_name,
+        args.query_csv,
+        args.query_id_name,
+        args.query_vector_name,
+        args.output,
+    ]:
         interactive()
     else:
-        extract(args.base_csv, args.base_id_name, args.base_vector_name,
-                args.query_csv, args.query_id_name, args.query_vector_name,
-                args.output, args.overwrite)
-    
+        extract(
+            args.base_csv,
+            args.base_id_name,
+            args.base_vector_name,
+            args.query_csv,
+            args.query_id_name,
+            args.query_vector_name,
+            args.output,
+            args.overwrite,
+        )

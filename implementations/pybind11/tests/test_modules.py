@@ -1,7 +1,8 @@
 import builtins
 
-import env
 import pytest
+
+import env
 from pybind11_tests import ConstructorStats
 from pybind11_tests import modules as m
 from pybind11_tests.modules import subsubmodule as ms
@@ -12,7 +13,10 @@ def test_nested_modules():
 
     assert pybind11_tests.__name__ == "pybind11_tests"
     assert pybind11_tests.modules.__name__ == "pybind11_tests.modules"
-    assert pybind11_tests.modules.subsubmodule.__name__ == "pybind11_tests.modules.subsubmodule"
+    assert (
+        pybind11_tests.modules.subsubmodule.__name__
+        == "pybind11_tests.modules.subsubmodule"
+    )
     assert m.__name__ == "pybind11_tests.modules"
     assert ms.__name__ == "pybind11_tests.modules.subsubmodule"
 

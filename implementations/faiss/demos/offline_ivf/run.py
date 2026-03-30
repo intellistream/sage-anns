@@ -3,7 +3,7 @@
 # LICENSE file in the root directory of this source tree.
 
 import argparse
-from typing import Callable
+from collections.abc import Callable
 
 import faiss
 import submitit

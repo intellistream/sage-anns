@@ -3,7 +3,6 @@
 # LICENSE file in the root directory of this source tree.
 
 import argparse
-from typing import Optional
 
 import numpy as np
 import yaml
@@ -31,20 +30,20 @@ class TestDataCreator:
         tempdir: str,
         dimension: int,
         data_type: np.dtype,
-        index_factory: Optional[list] = ["OPQ4,IVF256,PQ4"],
-        training_sample: Optional[int] = 9984,
-        index_shard_size: Optional[int] = 1000,
-        query_batch_size: Optional[int] = 1000,
-        evaluation_sample: Optional[int] = 100,
-        num_files: Optional[int] = None,
-        file_size: Optional[int] = None,
-        file_sizes: Optional[list] = None,
-        nprobe: Optional[int] = 64,
-        k: Optional[int] = 10,
-        metric: Optional[str] = "METRIC_L2",
-        normalise: Optional[bool] = False,
-        with_queries_ds: Optional[bool] = False,
-        evaluate_by_margin: Optional[bool] = False,
+        index_factory: list | None = ["OPQ4,IVF256,PQ4"],
+        training_sample: int | None = 9984,
+        index_shard_size: int | None = 1000,
+        query_batch_size: int | None = 1000,
+        evaluation_sample: int | None = 100,
+        num_files: int | None = None,
+        file_size: int | None = None,
+        file_sizes: list | None = None,
+        nprobe: int | None = 64,
+        k: int | None = 10,
+        metric: str | None = "METRIC_L2",
+        normalise: bool | None = False,
+        with_queries_ds: bool | None = False,
+        evaluate_by_margin: bool | None = False,
     ) -> None:
         self.tempdir = tempdir
         self.dimension = dimension

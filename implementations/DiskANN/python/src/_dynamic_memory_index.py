@@ -3,7 +3,6 @@
 
 import warnings
 from pathlib import Path
-from typing import Optional
 
 import numpy as np
 
@@ -50,9 +49,9 @@ class DynamicMemoryIndex:
         search_threads: int = 0,
         concurrent_consolidation: bool = True,
         index_prefix: str = "ann",
-        distance_metric: Optional[DistanceMetric] = None,
-        vector_dtype: Optional[VectorDType] = None,
-        dimensions: Optional[int] = None,
+        distance_metric: DistanceMetric | None = None,
+        vector_dtype: VectorDType | None = None,
+        dimensions: int | None = None,
     ) -> "DynamicMemoryIndex":
         index_prefix_path = _valid_index_prefix(index_directory, index_prefix)
 

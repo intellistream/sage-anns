@@ -1,5 +1,6 @@
-import env  # noqa: F401
 import pytest
+
+import env  # noqa: F401
 from pybind11_tests import ConstructorStats
 from pybind11_tests import call_policies as m
 

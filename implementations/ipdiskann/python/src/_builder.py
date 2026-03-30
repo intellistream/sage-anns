@@ -5,7 +5,6 @@ import json
 import os
 import shutil
 from pathlib import Path
-from typing import Optional, Tuple, Union
 
 import numpy as np
 
@@ -25,11 +24,11 @@ from ._files import tags_to_file, vectors_metadata_from_file, vectors_to_file
 
 
 def _valid_path_and_dtype(
-    data: Union[str, VectorLikeBatch],
+    data: str | VectorLikeBatch,
     vector_dtype: VectorDType,
     index_path: str,
     index_prefix: str,
-) -> Tuple[str, VectorDType]:
+) -> tuple[str, VectorDType]:
     if isinstance(data, str):
         vector_bin_path = data
         _assert(
@@ -40,9 +39,7 @@ def _valid_path_and_dtype(
     else:
         vector_bin_path = os.path.join(index_path, f"{index_prefix}_vectors.bin")
         if Path(vector_bin_path).exists():
-            raise ValueError(
-                f"The path {vector_bin_path} already exists. Remove it and try again."
-            )
+            raise ValueError(f"The path {vector_bin_path} already exists. Remove it and try again.")
         vector_dtype_actual = valid_dtype(data.dtype)
         vectors_to_file(vector_file=vector_bin_path, vectors=data)
 
@@ -50,7 +47,7 @@ def _valid_path_and_dtype(
 
 
 def build_disk_index(
-    data: Union[str, VectorLikeBatch],
+    data: str | VectorLikeBatch,
     distance_metric: DistanceMetric,
     index_directory: str,
     complexity: int,
@@ -59,10 +56,10 @@ def build_disk_index(
     build_memory_maximum: float,
     num_threads: int,
     pq_disk_bytes: int = defaults.PQ_DISK_BYTES,
-    vector_dtype: Optional[VectorDType] = None,
+    vector_dtype: VectorDType | None = None,
     index_prefix: str = "ann",
 ) -> None:
-    """
+    r"""
     This function will construct a DiskANN disk index. Disk indices are ideal for very large datasets that
     are too large to fit in memory. Memory is still used, but it is primarily used to provide precise disk
     locations for fast retrieval of smaller subsets of the index without compromising much on recall.
@@ -107,8 +104,7 @@ def build_disk_index(
     """
 
     _assert(
-        (isinstance(data, str) and vector_dtype is not None)
-        or isinstance(data, np.ndarray),
+        (isinstance(data, str) and vector_dtype is not None) or isinstance(data, np.ndarray),
         "vector_dtype is required if data is a str representing a path to the vector bin file",
     )
     dap_metric = _valid_metric(distance_metric)
@@ -129,11 +125,13 @@ def build_disk_index(
     vector_bin_path, vector_dtype_actual = _valid_path_and_dtype(
         data, vector_dtype, index_directory, index_prefix
     )
-    _assert(dap_metric != _native_dap.COSINE, "Cosine is currently not supported in StaticDiskIndex")
+    _assert(
+        dap_metric != _native_dap.COSINE, "Cosine is currently not supported in StaticDiskIndex"
+    )
     if dap_metric == _native_dap.INNER_PRODUCT:
         _assert(
             vector_dtype_actual == np.float32,
-            "Integral vector dtypes (np.uint8, np.int8) are not supported with distance metric mips"
+            "Integral vector dtypes (np.uint8, np.int8) are not supported with distance metric mips",
         )
 
     num_points, dimensions = vectors_metadata_from_file(vector_bin_path)
@@ -164,7 +162,7 @@ def build_disk_index(
 
 
 def build_memory_index(
-    data: Union[str, VectorLikeBatch],
+    data: str | VectorLikeBatch,
     distance_metric: DistanceMetric,
     index_directory: str,
     complexity: int,
@@ -174,14 +172,14 @@ def build_memory_index(
     use_pq_build: bool = defaults.USE_PQ_BUILD,
     num_pq_bytes: int = defaults.NUM_PQ_BYTES,
     use_opq: bool = defaults.USE_OPQ,
-    vector_dtype: Optional[VectorDType] = None,
-    tags: Union[str, VectorIdentifierBatch] = "",
-    filter_labels: Optional[list[list[str]]] = None,
+    vector_dtype: VectorDType | None = None,
+    tags: str | VectorIdentifierBatch = "",
+    filter_labels: list[list[str]] | None = None,
     universal_label: str = "",
     filter_complexity: int = defaults.FILTER_COMPLEXITY,
     index_prefix: str = "ann",
 ) -> None:
-    """
+    r"""
     This function will construct a DiskANN memory index. Memory indices are ideal for smaller datasets whose
     indices can fit into memory. Memory indices are faster than disk indices, but usually cannot scale to massive
     sizes in an individual index on an individual machine.
@@ -243,8 +241,7 @@ def build_memory_index(
     - **index_prefix**: The prefix of the index files. Defaults to "ann".
     """
     _assert(
-        (isinstance(data, str) and vector_dtype is not None)
-        or isinstance(data, np.ndarray),
+        (isinstance(data, str) and vector_dtype is not None) or isinstance(data, np.ndarray),
         "vector_dtype is required if data is a str representing a path to the vector bin file",
     )
     dap_metric = _valid_metric(distance_metric)
@@ -260,7 +257,7 @@ def build_memory_index(
     _assert(index_prefix != "", "index_prefix cannot be an empty string")
     _assert(
         filter_labels is None or filter_complexity > 0,
-        "if filter_labels is provided, filter_complexity must not be 0"
+        "if filter_labels is provided, filter_complexity must not be 0",
     )
 
     index_path = Path(index_directory)
@@ -275,14 +272,14 @@ def build_memory_index(
     if dap_metric == _native_dap.INNER_PRODUCT:
         _assert(
             vector_dtype_actual == np.float32,
-            "Integral vector dtypes (np.uint8, np.int8) are not supported with distance metric mips"
+            "Integral vector dtypes (np.uint8, np.int8) are not supported with distance metric mips",
         )
 
     num_points, dimensions = vectors_metadata_from_file(vector_bin_path)
     if filter_labels is not None:
         _assert(
             len(filter_labels) == num_points,
-            "filter_labels must be the same length as the number of points"
+            "filter_labels must be the same length as the number of points",
         )
 
     if vector_dtype_actual == np.uint8:
@@ -301,7 +298,9 @@ def build_memory_index(
         with open(filter_labels_file, "w") as labels_file:
             for labels in filter_labels:
                 for label in labels:
-                    label_counts[label] = 1 if label not in label_counts else label_counts[label] + 1
+                    label_counts[label] = (
+                        1 if label not in label_counts else label_counts[label] + 1
+                    )
                 if len(labels) == 0:
                     print("default", file=labels_file)
                 else:

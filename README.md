@@ -70,11 +70,11 @@ pip install -e .
 ## Quick Start
 
 ```python
-from sage_anns import ANNSIndex
+from sage_anns import create_index
 
 # Create an index
-index = ANNSIndex(
-    algorithm="faiss_hnsw",
+index = create_index(
+    "faiss_hnsw",
     dimension=128,
     metric="l2"
 )
@@ -97,10 +97,10 @@ print(f"Distances: {distances}")
 ### FAISS HNSW
 
 ```python
-from sage_anns import ANNSIndex
+from sage_anns import create_index
 
-index = ANNSIndex(
-    algorithm="faiss_hnsw",
+index = create_index(
+    "faiss_hnsw",
     dimension=128,
     metric="l2",
     M=32,  # HNSW parameter
@@ -113,10 +113,10 @@ index.search(query, k=10)
 ### DiskANN
 
 ```python
-from sage_anns import ANNSIndex
+from sage_anns import create_index
 
-index = ANNSIndex(
-    algorithm="diskann",
+index = create_index(
+    "diskann",
     dimension=128,
     metric="l2",
     index_path="./diskann_index"  # Disk storage
@@ -128,10 +128,10 @@ index.search(query, k=10)
 ### VSAG HNSW
 
 ```python
-from sage_anns import ANNSIndex
+from sage_anns import create_index
 
-index = ANNSIndex(
-    algorithm="vsag_hnsw",
+index = create_index(
+    "vsag_hnsw",
     dimension=128,
     metric="cosine",
     M=16,
@@ -144,10 +144,10 @@ index.search(query, k=10)
 ### GTI (Graph-based Tree Index)
 
 ```python
-from sage_anns import ANNSIndex
+from sage_anns import create_index
 
-index = ANNSIndex(
-    algorithm="gti",
+index = create_index(
+    "gti",
     dimension=128,
     metric="l2",
     m=16,  # Max graph connections per node
@@ -166,10 +166,10 @@ index.search(query, k=10)
 ### PLSH (Parallel Locality-Sensitive Hashing)
 
 ```python
-from sage_anns import ANNSIndex
+from sage_anns import create_index
 
-index = ANNSIndex(
-    algorithm="plsh",
+index = create_index(
+    "plsh",
     dimension=128,
     metric="l2",
     k=10,  # Hash functions per table
@@ -184,10 +184,10 @@ index.search(query, k=10)
 
 ## API Reference
 
-### `ANNSIndex`
+### `create_index`
 
 **Parameters:**
-- `algorithm` (str): Algorithm name (`faiss_hnsw`, `diskann`, `vsag_hnsw`, etc.)
+- Positional `algorithm` (str): Algorithm name (`faiss_hnsw`, `diskann`, `vsag_hnsw`, etc.)
 - `dimension` (int): Vector dimension
 - `metric` (str): Distance metric (`l2`, `cosine`, `inner_product`)
 - `**kwargs`: Algorithm-specific parameters

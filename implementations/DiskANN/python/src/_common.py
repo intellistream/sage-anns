@@ -5,7 +5,7 @@ import os
 import warnings
 from enum import Enum
 from pathlib import Path
-from typing import Literal, NamedTuple, Optional, Union
+from typing import Literal, NamedTuple, Union
 
 import numpy as np
 import numpy.typing as npt
@@ -89,7 +89,7 @@ def _assert_dtype(dtype: type):
 
 
 def _castable_dtype_or_raise(
-    data: Union[VectorLike, VectorLikeBatch, VectorIdentifierBatch],
+    data: VectorLike | VectorLikeBatch | VectorIdentifierBatch,
     expected: np.dtype,
     message: str,
 ) -> np.ndarray:
@@ -228,7 +228,7 @@ def _write_index_metadata(
 
 def _read_index_metadata(
     index_path_and_prefix: str,
-) -> Optional[tuple[VectorDType, str, np.uint64, np.uint64]]:
+) -> tuple[VectorDType, str, np.uint64, np.uint64] | None:
     path = _build_metadata_path(index_path_and_prefix)
     if not Path(path).exists():
         return None
@@ -244,10 +244,10 @@ def _read_index_metadata(
 
 def _ensure_index_metadata(
     index_path_and_prefix: str,
-    vector_dtype: Optional[VectorDType],
-    distance_metric: Optional[DistanceMetric],
+    vector_dtype: VectorDType | None,
+    distance_metric: DistanceMetric | None,
     max_vectors: int,
-    dimensions: Optional[int],
+    dimensions: int | None,
 ) -> tuple[VectorDType, str, np.uint64, np.uint64]:
     possible_metadata = _read_index_metadata(index_path_and_prefix)
     if possible_metadata is None:

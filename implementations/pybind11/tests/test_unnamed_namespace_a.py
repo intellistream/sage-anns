@@ -1,4 +1,5 @@
 import pytest
+
 from pybind11_tests import unnamed_namespace_a as m
 from pybind11_tests import unnamed_namespace_b as mb
 

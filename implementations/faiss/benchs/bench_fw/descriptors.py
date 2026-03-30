@@ -4,18 +4,18 @@
 # LICENSE file in the root directory of this source tree.
 
 from dataclasses import dataclass
-from typing import Any, Optional
+from typing import Any
 
 
 @dataclass
 class IndexDescriptor:
-    bucket: Optional[str] = None
+    bucket: str | None = None
     # either path or factory should be set,
     # but not both at the same time.
-    path: Optional[str] = None
-    factory: Optional[str] = None
-    construction_params: Optional[list[dict[str, int]]] = None
-    search_params: Optional[dict[str, int]] = None
+    path: str | None = None
+    factory: str | None = None
+    construction_params: list[dict[str, int]] | None = None
+    search_params: dict[str, int] | None = None
     # range metric definitions
     # key: name
     # value: one of the following:
@@ -31,8 +31,8 @@ class IndexDescriptor:
     # [[radius1_from, radius1_to, score1], ...]
     #    [radius1_from, radius1_to) -> score1,
     #    [radius2_from, radius2_to) -> score2
-    range_metrics: Optional[dict[str, Any]] = None
-    radius: Optional[float] = None
+    range_metrics: dict[str, Any] | None = None
+    radius: float | None = None
 
 
 @dataclass
@@ -45,7 +45,7 @@ class DatasetDescriptor:
     #    eg. "std_t"
     # 3. 'syn' for synthetic data
     # 4. None for local files
-    namespace: Optional[str] = None
+    namespace: str | None = None
 
     # tablename possible values, corresponding to the
     # namespace value above:
@@ -56,14 +56,14 @@ class DatasetDescriptor:
     # 3. d_seed, eg. 128_1234 for 128 dimensional vectors
     #    with seed 1234
     # 4. a local file name (relative to benchmark_io.path)
-    tablename: Optional[str] = None
+    tablename: str | None = None
 
     # partition names and values for hive
     # eg. ["ds=2021-09-01"]
-    partitions: Optional[list[str]] = None
+    partitions: list[str] | None = None
 
     # number of vectors to load from the dataset
-    num_vectors: Optional[int] = None
+    num_vectors: int | None = None
 
     def __hash__(self):
         return hash(self.get_filename())

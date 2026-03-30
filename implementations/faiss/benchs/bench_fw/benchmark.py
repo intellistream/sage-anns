@@ -7,7 +7,7 @@ import logging
 from dataclasses import dataclass
 from operator import itemgetter
 from statistics import mean, median
-from typing import Any, Optional
+from typing import Any
 
 import faiss  # @manual=//faiss/python:pyfaiss_gpu
 import numpy as np
@@ -182,12 +182,12 @@ def get_range_search_metric_function(range_metric, D, R):
 
 @dataclass
 class Benchmark:
-    training_vectors: Optional[DatasetDescriptor] = None
-    database_vectors: Optional[DatasetDescriptor] = None
-    query_vectors: Optional[DatasetDescriptor] = None
-    index_descs: Optional[list[IndexDescriptor]] = None
-    range_ref_index_desc: Optional[str] = None
-    k: Optional[int] = None
+    training_vectors: DatasetDescriptor | None = None
+    database_vectors: DatasetDescriptor | None = None
+    query_vectors: DatasetDescriptor | None = None
+    index_descs: list[IndexDescriptor] | None = None
+    range_ref_index_desc: str | None = None
+    k: int | None = None
     distance_metric: str = "L2"
 
     def __post_init__(self):
@@ -203,7 +203,7 @@ class Benchmark:
         self.io.distance_metric = self.distance_metric
         self.io.distance_metric_type = self.distance_metric_type
 
-    def get_index_desc(self, factory: str) -> Optional[IndexDescriptor]:
+    def get_index_desc(self, factory: str) -> IndexDescriptor | None:
         for desc in self.index_descs:
             if desc.factory == factory:
                 return desc
@@ -264,9 +264,9 @@ class Benchmark:
     def range_search(
         self,
         index: Index,
-        search_parameters: Optional[dict[str, int]],
-        radius: Optional[float] = None,
-        gt_radius: Optional[float] = None,
+        search_parameters: dict[str, int] | None,
+        radius: float | None = None,
+        gt_radius: float | None = None,
     ):
         logger.info("range_search: begin")
         if radius is None:
